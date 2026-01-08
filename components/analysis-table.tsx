@@ -20,6 +20,7 @@ import {
   Download,
   Mailbox,
   Upload,
+  Users,
 } from "lucide-react"
 import { useState, useRef } from "react" // Added useRef for file input
 import { ReportModal } from "@/components/report-modal"
@@ -92,6 +93,7 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
           lastChecked: "Just now",
           copyrightYear: new Date().getFullYear(),
           source: row.source || "CSV Import",
+          companySize: row.companySize || undefined, // Added companySize field
         })
       }
 
@@ -135,6 +137,7 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
       "Status",
       "Last Checked",
       "Source",
+      "Company Size",
     ]
 
     const rows = analyses.map((a) => [
@@ -155,6 +158,7 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
       a.status,
       a.lastChecked,
       a.source || "",
+      a.companySize || "N/A",
     ])
 
     const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n")
@@ -208,6 +212,13 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
     return year < 2022
   }
 
+  const getCompanySizeBadge = (size?: string) => {
+    if (!size) return { className: "bg-muted/50 text-muted-foreground border-border", label: "N/A" }
+    if (size === "50+") return { className: "bg-primary/10 text-primary border-primary/20", label: size }
+    if (size === "11-50") return { className: "bg-accent/10 text-accent border-accent/20", label: size }
+    return { className: "bg-muted/50 text-foreground border-border", label: size }
+  }
+
   return (
     <>
       <Card className="overflow-hidden">
@@ -250,182 +261,203 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {analyses.map((analysis) => (
-                <tr
-                  key={analysis.id}
-                  className={`hover:bg-muted/30 transition-colors ${isHotLead(analysis) ? "bg-destructive/5" : ""}`}
-                >
-                  <td className="px-4 py-4">
-                    <div className="flex items-start gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-foreground truncate">
-                            {analysis.companyName || analysis.website}
-                          </span>
-                          {isOutdated(analysis.copyrightYear) && (
-                            <HoverCard>
-                              <HoverCardTrigger>
-                                <AlertTriangle className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
-                              </HoverCardTrigger>
-                              <HoverCardContent className="w-60">
-                                <div className="space-y-1">
-                                  <p className="text-sm font-semibold">Outdated Website</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Copyright from {analysis.copyrightYear} - Website likely abandoned or unmaintained
-                                  </p>
-                                </div>
-                              </HoverCardContent>
-                            </HoverCard>
-                          )}
-                          {isHotLead(analysis) && (
-                            <Badge
-                              variant="outline"
-                              className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] px-1 py-0 flex-shrink-0"
-                            >
-                              HOT
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
+              {analyses.map((analysis) => {
+                const companySizeBadge = getCompanySizeBadge(analysis.companySize)
 
-                  <td className="px-4 py-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                        <span className="text-xs text-foreground truncate">{analysis.email || "N/A"}</span>
-                        {analysis.email && (
-                          <button
-                            onClick={() => copyToClipboard(analysis.email)}
-                            className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                        <span className="text-xs text-muted-foreground truncate">{analysis.location || "N/A"}</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
-                      <HoverCard>
-                        <HoverCardTrigger>
-                          <div className="flex flex-wrap gap-1">
-                            {(analysis.techStack || []).slice(0, 2).map((tech, idx) => (
-                              <Badge key={idx} variant="outline" className="text-[10px] px-1.5 py-0">
-                                {tech}
-                              </Badge>
-                            ))}
-                            {(analysis.techStack || []).length > 2 && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                +{(analysis.techStack || []).length - 2}
+                return (
+                  <tr
+                    key={analysis.id}
+                    className={`hover:bg-muted/30 transition-colors ${isHotLead(analysis) ? "bg-destructive/5" : ""}`}
+                  >
+                    <td className="px-4 py-4">
+                      <div className="flex items-start gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-sm font-semibold text-foreground truncate">
+                              {analysis.companyName || analysis.website}
+                            </span>
+                            {isOutdated(analysis.copyrightYear) && (
+                              <HoverCard>
+                                <HoverCardTrigger>
+                                  <AlertTriangle className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-60">
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-semibold">Outdated Website</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Copyright from {analysis.copyrightYear} - Website likely abandoned or unmaintained
+                                    </p>
+                                  </div>
+                                </HoverCardContent>
+                              </HoverCard>
+                            )}
+                            {isHotLead(analysis) && (
+                              <Badge
+                                variant="outline"
+                                className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] px-1 py-0 flex-shrink-0"
+                              >
+                                HOT
                               </Badge>
                             )}
                           </div>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-60">
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold">Full Tech Stack</p>
-                            <div className="flex flex-wrap gap-1">
-                              {(analysis.techStack || []).map((tech, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {tech}
-                                </Badge>
-                              ))}
-                            </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {analysis.industry && (
+                              <Badge
+                                variant="outline"
+                                className="bg-muted/50 text-muted-foreground border-border text-[10px] px-1.5 py-0"
+                              >
+                                {analysis.industry}
+                              </Badge>
+                            )}
+                            <Badge
+                              variant="outline"
+                              className={`${companySizeBadge.className} text-[10px] px-1.5 py-0`}
+                            >
+                              <Users className="h-2.5 w-2.5 mr-0.5" />
+                              {companySizeBadge.label}
+                            </Badge>
                           </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                      {analysis.hasAdsPixel && (
-                        <Badge
-                          variant="outline"
-                          className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0"
-                        >
-                          <Zap className="h-2.5 w-2.5 mr-1" />
-                          Ads Pixel
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
+                        </div>
+                      </div>
+                    </td>
 
-                  <td className="px-4 py-4">
-                    {analysis.status === "analyzing" ? (
-                      <span className="text-muted-foreground text-xs">—</span>
-                    ) : (
+                    <td className="px-4 py-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs text-foreground truncate">{analysis.email || "N/A"}</span>
+                          {analysis.email && (
+                            <button
+                              onClick={() => copyToClipboard(analysis.email)}
+                              className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs text-muted-foreground truncate">{analysis.location || "N/A"}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4">
                       <div className="space-y-2">
                         <HoverCard>
                           <HoverCardTrigger>
-                            <Badge variant="outline" className={getSpeedScoreBg(analysis.googleSpeedScore)}>
-                              Speed: {analysis.googleSpeedScore}
-                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {(analysis.techStack || []).slice(0, 2).map((tech, idx) => (
+                                <Badge key={idx} variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {tech}
+                                </Badge>
+                              ))}
+                              {(analysis.techStack || []).length > 2 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  +{(analysis.techStack || []).length - 2}
+                                </Badge>
+                              )}
+                            </div>
                           </HoverCardTrigger>
                           <HoverCardContent className="w-60">
-                            <div className="space-y-2">
-                              <p className="text-sm font-semibold">Performance Details</p>
-                              <div className="space-y-1 text-xs">
-                                <p>
-                                  <span className="text-muted-foreground">Google PageSpeed:</span>{" "}
-                                  <span className={getSpeedScoreColor(analysis.googleSpeedScore)}>
-                                    {analysis.googleSpeedScore}/100
-                                  </span>
-                                </p>
-                                <p>
-                                  <span className="text-muted-foreground">Load Time:</span> {analysis.loadingTime}
-                                </p>
-                                {analysis.googleSpeedScore < 50 && (
-                                  <p className="text-destructive">⚠️ Critical: Slow LCP, High CLS</p>
-                                )}
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold">Full Tech Stack</p>
+                              <div className="flex flex-wrap gap-1">
+                                {(analysis.techStack || []).map((tech, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {tech}
+                                  </Badge>
+                                ))}
                               </div>
                             </div>
                           </HoverCardContent>
                         </HoverCard>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{analysis.loadingTime}</span>
-                        </div>
+                        {analysis.hasAdsPixel && (
+                          <Badge
+                            variant="outline"
+                            className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0"
+                          >
+                            <Zap className="h-2.5 w-2.5 mr-1" />
+                            Ads Pixel
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-4">
-                    <Badge variant="outline" className={getStatusBadge(analysis.status)}>
-                      {analysis.status === "analyzing" && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                      {analysis.status.charAt(0).toUpperCase() + analysis.status.slice(1)}
-                    </Badge>
-                  </td>
+                    <td className="px-4 py-4">
+                      {analysis.status === "analyzing" ? (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      ) : (
+                        <div className="space-y-2">
+                          <HoverCard>
+                            <HoverCardTrigger>
+                              <Badge variant="outline" className={getSpeedScoreBg(analysis.googleSpeedScore)}>
+                                Speed: {analysis.googleSpeedScore}
+                              </Badge>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="w-60">
+                              <div className="space-y-2">
+                                <p className="text-sm font-semibold">Performance Details</p>
+                                <div className="space-y-1 text-xs">
+                                  <p>
+                                    <span className="text-muted-foreground">Google PageSpeed:</span>{" "}
+                                    <span className={getSpeedScoreColor(analysis.googleSpeedScore)}>
+                                      {analysis.googleSpeedScore}/100
+                                    </span>
+                                  </p>
+                                  <p>
+                                    <span className="text-muted-foreground">Load Time:</span> {analysis.loadingTime}
+                                  </p>
+                                  {analysis.googleSpeedScore < 50 && (
+                                    <p className="text-destructive">⚠️ Critical: Slow LCP, High CLS</p>
+                                  )}
+                                </div>
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{analysis.loadingTime}</span>
+                          </div>
+                        </div>
+                      )}
+                    </td>
 
-                  <td className="px-4 py-4">
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPitchAnalysis(analysis)}
-                        disabled={analysis.status !== "completed"}
-                        className="gap-1.5 h-8 px-2"
-                      >
-                        <Mailbox className="h-3.5 w-3.5" />
-                        Pitch
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedAnalysis(analysis)}
-                        disabled={analysis.status !== "completed"}
-                        className="gap-1.5 h-8 px-2"
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        Report
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    <td className="px-4 py-4">
+                      <Badge variant="outline" className={getStatusBadge(analysis.status)}>
+                        {analysis.status === "analyzing" && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                        {analysis.status.charAt(0).toUpperCase() + analysis.status.slice(1)}
+                      </Badge>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPitchAnalysis(analysis)}
+                          disabled={analysis.status !== "completed"}
+                          className="gap-1.5 h-8 px-2"
+                        >
+                          <Mailbox className="h-3.5 w-3.5" />
+                          Pitch
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedAnalysis(analysis)}
+                          disabled={analysis.status !== "completed"}
+                          className="gap-1.5 h-8 px-2"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          Report
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

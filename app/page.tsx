@@ -34,6 +34,7 @@ export interface Analysis {
   googleSpeedScore: number
   loadingTime: string
   copyrightYear: number
+  companySize?: string
 }
 
 export interface Lead {
@@ -116,6 +117,7 @@ export default function Dashboard() {
       googleSpeedScore: 0,
       loadingTime: "0s",
       copyrightYear: new Date().getFullYear(),
+      companySize: "",
     }
     setAnalyses([newAnalysis, ...analyses])
 
@@ -130,6 +132,11 @@ export default function Dashboard() {
         (uiScore + seoScore + techScore + performanceScore + securityScore + mobileScore) / 6,
       )
 
+      const companySizes = ["1-10", "11-50", "50+"]
+      const industries = ["Construction", "Retail", "Healthcare", "Technology", "Hospitality", "Manufacturing"]
+      const randomCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)]
+      const randomIndustry = industries[Math.floor(Math.random() * industries.length)]
+
       setAnalyses((prev) =>
         prev.map((a) =>
           a.id === newAnalysis.id
@@ -138,6 +145,8 @@ export default function Dashboard() {
                 companyName: "Example Company AG",
                 email: "info@example.ch",
                 location: "Zürich, Switzerland",
+                companySize: randomCompanySize,
+                industry: randomIndustry,
                 uiScore,
                 seoScore,
                 techScore,
@@ -217,6 +226,7 @@ function getDemoAnalyses(): Analysis[] {
       companyName: "Bäckerei Müller",
       email: "info@baeckerei-mueller.ch",
       location: "Zürich, Switzerland",
+      companySize: "1-10",
       uiScore: 42,
       seoScore: 38,
       techScore: 51,
@@ -247,6 +257,7 @@ function getDemoAnalyses(): Analysis[] {
       companyName: "Coiffeur Élégant",
       email: "kontakt@coiffeur-elegant.ch",
       location: "Bern, Switzerland",
+      companySize: "11-50",
       uiScore: 55,
       seoScore: 62,
       techScore: 48,
@@ -276,6 +287,7 @@ function getDemoAnalyses(): Analysis[] {
       companyName: "Metzgerei Weber AG",
       email: "weber@metzgerei-weber.ch",
       location: "Luzern, Switzerland",
+      companySize: "50+",
       uiScore: 68,
       seoScore: 71,
       techScore: 65,
@@ -300,6 +312,7 @@ function getDemoAnalyses(): Analysis[] {
       companyName: "Garage Fischer",
       email: "info@garage-fischer.ch",
       location: "Basel, Switzerland",
+      companySize: "1-10",
       uiScore: 35,
       seoScore: 41,
       techScore: 38,
@@ -330,6 +343,7 @@ function getDemoAnalyses(): Analysis[] {
       companyName: "Restaurant Alpenblick",
       email: "reservation@alpenblick.ch",
       location: "Interlaken, Switzerland",
+      companySize: "11-50",
       uiScore: 48,
       seoScore: 52,
       techScore: 45,

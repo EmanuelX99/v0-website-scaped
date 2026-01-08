@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { Analysis } from "@/app/page"
-import { AlertCircle, TrendingDown, Zap, Clock, AlertTriangle } from "lucide-react"
+import { AlertCircle, TrendingDown, Zap, Clock, AlertTriangle, Building2, Users } from "lucide-react"
 
 interface AnalysisDetailsProps {
   analysis?: Analysis
@@ -36,6 +36,15 @@ export function AnalysisDetails({ analysis }: AnalysisDetailsProps) {
   const isHotLead = analysis.hasAdsPixel && analysis.totalScore < 60
   const isOutdated = analysis.copyrightYear < 2022
 
+  const getCompanySizeBadge = (size?: string) => {
+    if (!size) return { className: "bg-muted text-muted-foreground border-muted", label: "Unknown" }
+    if (size === "50+") return { className: "bg-primary/10 text-primary border-primary/20", label: size + " employees" }
+    if (size === "11-50") return { className: "bg-accent/10 text-accent border-accent/20", label: size + " employees" }
+    return { className: "bg-muted text-foreground border-border", label: size + " employees" }
+  }
+
+  const companySizeBadge = getCompanySizeBadge(analysis.companySize)
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -59,6 +68,29 @@ export function AnalysisDetails({ analysis }: AnalysisDetailsProps) {
         </div>
 
         <div className="space-y-3 pt-2 border-t border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <Building2 className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold text-foreground">Company Profile</h4>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-muted-foreground text-xs mb-1">Industry</p>
+              <Badge variant="outline" className="bg-muted/50 text-foreground border-border">
+                <Building2 className="h-3 w-3 mr-1" />
+                {analysis.industry || "Unknown"}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs mb-1">Company Size</p>
+              <Badge variant="outline" className={companySizeBadge.className}>
+                <Users className="h-3 w-3 mr-1" />
+                {companySizeBadge.label}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-2 border-t border-border">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-muted-foreground text-xs mb-1">Company</p>
@@ -68,13 +100,9 @@ export function AnalysisDetails({ analysis }: AnalysisDetailsProps) {
               <p className="text-muted-foreground text-xs mb-1">Location</p>
               <p className="font-medium">{analysis.location}</p>
             </div>
-            <div>
+            <div className="col-span-2">
               <p className="text-muted-foreground text-xs mb-1">Email</p>
               <p className="font-medium text-xs truncate">{analysis.email}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs mb-1">Industry</p>
-              <p className="font-medium">{analysis.industry}</p>
             </div>
           </div>
 

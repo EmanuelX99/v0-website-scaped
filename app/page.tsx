@@ -111,7 +111,7 @@ export default function Dashboard() {
       status: "analyzing",
       lastChecked: "Just now",
       issues: [],
-      source: "Manual Input",
+      source: "Google Maps",
       techStack: [],
       hasAdsPixel: false,
       googleSpeedScore: 0,
@@ -249,7 +249,7 @@ function getDemoAnalyses(): Analysis[] {
         "LCP over 4s - Critical performance issue",
       ],
       industry: "Bakery & Food",
-      source: "local.ch",
+      source: "Google Maps",
     },
     {
       id: "2",
@@ -279,7 +279,7 @@ function getDemoAnalyses(): Analysis[] {
         "No structured data for local business",
       ],
       industry: "Beauty & Wellness",
-      source: "search.ch",
+      source: "Google Maps",
     },
     {
       id: "3",
@@ -335,7 +335,7 @@ function getDemoAnalyses(): Analysis[] {
         "Page speed critical - over 5s",
       ],
       industry: "Automotive",
-      source: "local.ch",
+      source: "Google Maps",
     },
     {
       id: "5",
@@ -360,7 +360,7 @@ function getDemoAnalyses(): Analysis[] {
         "Slow menu page loading",
       ],
       industry: "Restaurant",
-      source: "search.ch",
+      source: "Google Maps",
       techStack: [],
       hasAdsPixel: false,
       googleSpeedScore: 0,
@@ -378,7 +378,7 @@ function getDemoLeads(): Lead[] {
       totalScore: 35,
       mainIssue: "No SSL Certificate",
       industry: "Beauty & Wellness",
-      source: "local.ch",
+      source: "Google Maps",
       leadStrength: "strong",
     },
     {
@@ -387,7 +387,7 @@ function getDemoLeads(): Lead[] {
       totalScore: 42,
       mainIssue: "Outdated UI Design",
       industry: "Food & Beverage",
-      source: "search.ch",
+      source: "Google Maps",
       leadStrength: "strong",
     },
     {
@@ -396,7 +396,7 @@ function getDemoLeads(): Lead[] {
       totalScore: 48,
       mainIssue: "Poor Performance",
       industry: "Retail",
-      source: "local.ch",
+      source: "Google Maps",
       leadStrength: "medium",
     },
     {
@@ -405,7 +405,7 @@ function getDemoLeads(): Lead[] {
       totalScore: 58,
       mainIssue: "Poor SEO Setup",
       industry: "Automotive",
-      source: "search.ch",
+      source: "Google Maps",
       leadStrength: "medium",
     },
   ]

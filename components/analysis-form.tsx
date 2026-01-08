@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Search, Loader2 } from "lucide-react"
 
 interface AnalysisFormProps {
@@ -17,14 +16,9 @@ interface AnalysisFormProps {
 
 export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
   const [url, setUrl] = useState("")
-  const [sourceMode, setSourceMode] = useState<"manual" | "directory">("manual")
+  const [sourceMode, setSourceMode] = useState<"manual" | "google-maps">("manual")
   const [isScanning, setIsScanning] = useState(false)
-  const [dataSources, setDataSources] = useState({
-    localCh: true,
-    searchCh: false,
-  })
-  const [industry, setIndustry] = useState("")
-  const [location, setLocation] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [scanCount, setScanCount] = useState("25")
   const [customCount, setCustomCount] = useState("")
 
@@ -36,7 +30,9 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
     }
   }
 
-  const handleDirectoryScan = () => {
+  const handleGoogleMapsScan = () => {
+    if (!searchQuery.trim()) return
+
     setIsScanning(true)
     const count = scanCount === "custom" ? Number.parseInt(customCount) || 10 : Number.parseInt(scanCount)
 
@@ -45,10 +41,11 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
       // Add placeholder analyses
       for (let i = 0; i < Math.min(count, 5); i++) {
         setTimeout(() => {
-          onAnalyze(`directory-site-${Date.now()}-${i}.ch`)
+          onAnalyze(`google-maps-${Date.now()}-${i}.com`)
         }, i * 300)
       }
       setIsScanning(false)
+      setSearchQuery("")
     }, 1000)
   }
 
@@ -57,13 +54,13 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
       <div className="space-y-6">
         <div>
           <Label className="mb-2 block text-sm font-medium text-foreground">Source Mode</Label>
-          <Select value={sourceMode} onValueChange={(val) => setSourceMode(val as "manual" | "directory")}>
+          <Select value={sourceMode} onValueChange={(val) => setSourceMode(val as "manual" | "google-maps")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="manual">Manual Input</SelectItem>
-              <SelectItem value="directory">Directory Scraping</SelectItem>
+              <SelectItem value="manual">Single Website Scan</SelectItem>
+              <SelectItem value="google-maps">Google Maps Bulk Search</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -86,54 +83,18 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
         ) : (
           <div className="space-y-4">
             <div>
-              <Label className="mb-3 block text-sm font-medium text-foreground">Data Sources</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="local-ch"
-                    checked={dataSources.localCh}
-                    onCheckedChange={(checked) => setDataSources({ ...dataSources, localCh: checked as boolean })}
-                  />
-                  <Label htmlFor="local-ch" className="text-sm text-foreground">
-                    local.ch
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="search-ch"
-                    checked={dataSources.searchCh}
-                    onCheckedChange={(checked) => setDataSources({ ...dataSources, searchCh: checked as boolean })}
-                  />
-                  <Label htmlFor="search-ch" className="text-sm text-foreground">
-                    search.ch
-                  </Label>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="industry-filter" className="mb-2 block text-sm font-medium text-foreground">
-                  Industry Filter
-                </Label>
-                <Input
-                  id="industry-filter"
-                  placeholder="e.g., Restaurants"
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="location-filter" className="mb-2 block text-sm font-medium text-foreground">
-                  Location Filter
-                </Label>
-                <Input
-                  id="location-filter"
-                  placeholder="e.g., Zurich"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
+              <Label htmlFor="search-query" className="mb-2 block text-sm font-medium text-foreground">
+                Search Query
+              </Label>
+              <Input
+                id="search-query"
+                placeholder='e.g., "Maler Zürich", "Restaurants in Berlin", "Hotels London"'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Enter any Google Maps search term (business type + location)
+              </p>
             </div>
 
             <div>
@@ -165,16 +126,20 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
               </div>
             </div>
 
-            <Button onClick={handleDirectoryScan} disabled={isScanning} className="w-full gap-2">
+            <Button
+              onClick={handleGoogleMapsScan}
+              disabled={isScanning || !searchQuery.trim()}
+              className="w-full gap-2"
+            >
               {isScanning ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Scanning...
+                  Searching Google Maps...
                 </>
               ) : (
                 <>
                   <Search className="h-4 w-4" />
-                  Start Scan
+                  Start Google Maps Search
                 </>
               )}
             </Button>

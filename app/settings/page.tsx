@@ -6,23 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { SettingsIcon, Database, Sliders, CheckCircle2, AlertTriangle } from "lucide-react"
+import { SettingsIcon, Sliders, CheckCircle2, AlertTriangle, Globe } from "lucide-react"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 
 export default function SettingsPage() {
   // Data Sources state
-  const [dataSources, setDataSources] = useState({
-    localCh: true,
-    searchCh: true,
-    swissDirectories: false,
-  })
-  const [industry, setIndustry] = useState("")
-  const [location, setLocation] = useState("")
   const [scrapeCount, setScrapeCount] = useState("25")
   const [customCount, setCustomCount] = useState("")
 
@@ -77,7 +69,7 @@ export default function SettingsPage() {
             <SettingsIcon className="h-6 w-6 text-foreground" />
             <h1 className="text-3xl font-bold text-foreground">Settings</h1>
           </div>
-          <p className="text-muted-foreground">Configure data sources, scoring weights, and analysis preferences</p>
+          <p className="text-muted-foreground">Configure scoring weights and analysis preferences</p>
         </div>
 
         {showSuccess && (
@@ -91,73 +83,24 @@ export default function SettingsPage() {
           {/* Data Sources Panel */}
           <Card className="p-6">
             <div className="mb-6 flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Data Sources</h2>
+              <Globe className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Data Source</h2>
             </div>
 
             <div className="space-y-6">
-              <div>
-                <Label className="mb-4 block text-sm font-medium text-foreground">Active Sources</Label>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="local-ch" className="text-sm text-foreground">
-                      local.ch
-                    </Label>
-                    <Switch
-                      id="local-ch"
-                      checked={dataSources.localCh}
-                      onCheckedChange={(checked) => setDataSources({ ...dataSources, localCh: checked })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="search-ch" className="text-sm text-foreground">
-                      search.ch
-                    </Label>
-                    <Switch
-                      id="search-ch"
-                      checked={dataSources.searchCh}
-                      onCheckedChange={(checked) => setDataSources({ ...dataSources, searchCh: checked })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="swiss-dir" className="text-sm text-foreground">
-                      Swiss Company Directories
-                    </Label>
-                    <Switch
-                      id="swiss-dir"
-                      checked={dataSources.swissDirectories}
-                      onCheckedChange={(checked) => setDataSources({ ...dataSources, swissDirectories: checked })}
-                    />
-                  </div>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Google Maps</h3>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  All website data is now sourced from Google Maps Business listings worldwide. Search for any business
+                  type and location to find potential leads.
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="industry" className="mb-2 block text-sm font-medium text-foreground">
-                  Industry Filter
-                </Label>
-                <Input
-                  id="industry"
-                  placeholder="e.g., Restaurants, Retail, Hotels"
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="location" className="mb-2 block text-sm font-medium text-foreground">
-                  Location Filter
-                </Label>
-                <Input
-                  id="location"
-                  placeholder="e.g., Zurich, Bern, Geneva"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label className="mb-2 block text-sm font-medium text-foreground">Websites per Scan</Label>
+                <Label className="mb-2 block text-sm font-medium text-foreground">Results per Search</Label>
                 <div className="space-y-3">
                   <Select value={scrapeCount} onValueChange={setScrapeCount}>
                     <SelectTrigger>
@@ -183,6 +126,9 @@ export default function SettingsPage() {
                     />
                   )}
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Configure how many businesses to analyze per Google Maps search
+                </p>
               </div>
             </div>
           </Card>

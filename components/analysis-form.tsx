@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Loader2 } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Switch } from "@/components/ui/switch"
+import { Search, Loader2, Briefcase, MapPin, SlidersHorizontal } from "lucide-react"
 
 interface AnalysisFormProps {
   onAnalyze: (url: string) => void
@@ -17,14 +19,20 @@ interface AnalysisFormProps {
 
 export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
   const [url, setUrl] = useState("")
-  const [sourceMode, setSourceMode] = useState<"manual" | "directory">("manual")
+  const [sourceMode, setSourceMode] = useState<"manual" | "google-maps">("manual")
   const [isScanning, setIsScanning] = useState(false)
-  const [dataSources, setDataSources] = useState({
-    localCh: true,
-    searchCh: false,
-  })
+
+  // Search inputs
   const [industry, setIndustry] = useState("")
   const [location, setLocation] = useState("")
+
+  const [maxRating, setMaxRating] = useState("any")
+  const [minReviews, setMinReviews] = useState("")
+  const [priceLevel, setPriceLevel] = useState<string[]>([])
+  const [mustHavePhone, setMustHavePhone] = useState(false)
+  const [maxPhotos, setMaxPhotos] = useState("any")
+  const [websiteStatus, setWebsiteStatus] = useState("any")
+
   const [scanCount, setScanCount] = useState("25")
   const [customCount, setCustomCount] = useState("")
 
@@ -36,7 +44,9 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
     }
   }
 
-  const handleDirectoryScan = () => {
+  const handleGoogleMapsScan = () => {
+    if (!industry.trim() || !location.trim()) return
+
     setIsScanning(true)
     const count = scanCount === "custom" ? Number.parseInt(customCount) || 10 : Number.parseInt(scanCount)
 
@@ -45,10 +55,12 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
       // Add placeholder analyses
       for (let i = 0; i < Math.min(count, 5); i++) {
         setTimeout(() => {
-          onAnalyze(`directory-site-${Date.now()}-${i}.ch`)
+          onAnalyze(`google-maps-${Date.now()}-${i}.com`)
         }, i * 300)
       }
       setIsScanning(false)
+      setIndustry("")
+      setLocation("")
     }, 1000)
   }
 
@@ -57,13 +69,13 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
       <div className="space-y-6">
         <div>
           <Label className="mb-2 block text-sm font-medium text-foreground">Source Mode</Label>
-          <Select value={sourceMode} onValueChange={(val) => setSourceMode(val as "manual" | "directory")}>
+          <Select value={sourceMode} onValueChange={(val) => setSourceMode(val as "manual" | "google-maps")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="manual">Manual Input</SelectItem>
-              <SelectItem value="directory">Directory Scraping</SelectItem>
+              <SelectItem value="manual">Single Website Scan</SelectItem>
+              <SelectItem value="google-maps">Google Maps Bulk Search</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -84,100 +96,227 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
             </Button>
           </form>
         ) : (
-          <div className="space-y-4">
-            <div>
-              <Label className="mb-3 block text-sm font-medium text-foreground">Data Sources</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="local-ch"
-                    checked={dataSources.localCh}
-                    onCheckedChange={(checked) => setDataSources({ ...dataSources, localCh: checked as boolean })}
-                  />
-                  <Label htmlFor="local-ch" className="text-sm text-foreground">
-                    local.ch
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="search-ch"
-                    checked={dataSources.searchCh}
-                    onCheckedChange={(checked) => setDataSources({ ...dataSources, searchCh: checked as boolean })}
-                  />
-                  <Label htmlFor="search-ch" className="text-sm text-foreground">
-                    search.ch
-                  </Label>
-                </div>
-              </div>
-            </div>
-
+          <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="industry-filter" className="mb-2 block text-sm font-medium text-foreground">
-                  Industry Filter
+                <Label htmlFor="industry" className="mb-2 block text-sm font-medium text-foreground">
+                  Branche / Keyword
                 </Label>
-                <Input
-                  id="industry-filter"
-                  placeholder="e.g., Restaurants"
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                />
+                <div className="relative">
+                  <Briefcase className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="industry"
+                    placeholder="z.B. Zahnarzt, Restaurant"
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
               <div>
-                <Label htmlFor="location-filter" className="mb-2 block text-sm font-medium text-foreground">
-                  Location Filter
+                <Label htmlFor="location" className="mb-2 block text-sm font-medium text-foreground">
+                  Stadt / Ort
                 </Label>
-                <Input
-                  id="location-filter"
-                  placeholder="e.g., Zurich"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="location"
+                    placeholder="z.B. Zürich, Berlin"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
             </div>
+
+            <Accordion type="single" collapsible className="rounded-lg border border-border bg-card/50">
+              <AccordionItem value="filters" className="border-none">
+                <AccordionTrigger className="px-4 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Advanced Filters</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Qualität & Größe
+                      </h4>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        {/* Max Rating */}
+                        <div>
+                          <Label htmlFor="max-rating" className="mb-2 block text-xs font-medium text-foreground">
+                            Max Rating
+                          </Label>
+                          <Select value={maxRating} onValueChange={setMaxRating}>
+                            <SelectTrigger id="max-rating" className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              <SelectItem value="4.8">&lt; 4.8</SelectItem>
+                              <SelectItem value="4.5">&lt; 4.5</SelectItem>
+                              <SelectItem value="4.0">&lt; 4.0</SelectItem>
+                              <SelectItem value="3.5">&lt; 3.5</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Min Reviews - Number Input */}
+                        <div>
+                          <Label htmlFor="min-reviews" className="mb-2 block text-xs font-medium text-foreground">
+                            Min Reviews
+                          </Label>
+                          <Input
+                            id="min-reviews"
+                            type="number"
+                            min="0"
+                            placeholder="z.B. 10"
+                            value={minReviews}
+                            onChange={(e) => setMinReviews(e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="mb-2 block text-xs font-medium text-foreground">Price Level</Label>
+                          <ToggleGroup
+                            type="multiple"
+                            value={priceLevel}
+                            onValueChange={setPriceLevel}
+                            className="grid grid-cols-5 gap-1 h-9"
+                            variant="outline"
+                          >
+                            <ToggleGroupItem value="any" aria-label="Any price" className="h-9 px-2 text-xs">
+                              Any
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="1" aria-label="Price level 1" className="h-9 px-2 text-xs">
+                              $
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="2" aria-label="Price level 2" className="h-9 px-2 text-xs">
+                              $$
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="3" aria-label="Price level 3" className="h-9 px-2 text-xs">
+                              $$$
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="4" aria-label="Price level 4" className="h-9 px-2 text-xs">
+                              $$$$
+                            </ToggleGroupItem>
+                          </ToggleGroup>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Kontakt & Content
+                      </h4>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        {/* Must Have Phone Number - Switch */}
+                        <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2">
+                          <Label
+                            htmlFor="phone-required"
+                            className="text-xs font-medium text-foreground cursor-pointer"
+                          >
+                            Nur mit Telefonnummer
+                          </Label>
+                          <Switch id="phone-required" checked={mustHavePhone} onCheckedChange={setMustHavePhone} />
+                        </div>
+
+                        {/* Max Photos */}
+                        <div>
+                          <Label htmlFor="max-photos" className="mb-2 block text-xs font-medium text-foreground">
+                            Schlechte Visuals / Wenig Fotos
+                          </Label>
+                          <Select value={maxPhotos} onValueChange={setMaxPhotos}>
+                            <SelectTrigger id="max-photos" className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              <SelectItem value="5">&lt; 5 Fotos</SelectItem>
+                              <SelectItem value="10">&lt; 10 Fotos</SelectItem>
+                              <SelectItem value="20">&lt; 20 Fotos</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Website Status */}
+                        <div>
+                          <Label htmlFor="website-status" className="mb-2 block text-xs font-medium text-foreground">
+                            Website Status
+                          </Label>
+                          <Select value={websiteStatus} onValueChange={setWebsiteStatus}>
+                            <SelectTrigger id="website-status" className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any</SelectItem>
+                              <SelectItem value="has-website">Has Website</SelectItem>
+                              <SelectItem value="no-website">No Website</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             <div>
-              <Label className="mb-2 block text-sm font-medium text-foreground">Number of Websites</Label>
-              <div className="space-y-3">
-                <Select value={scanCount} onValueChange={setScanCount}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10 websites</SelectItem>
-                    <SelectItem value="25">25 websites</SelectItem>
-                    <SelectItem value="50">50 websites</SelectItem>
-                    <SelectItem value="100">100 websites</SelectItem>
-                    <SelectItem value="250">250 websites</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-                {scanCount === "custom" && (
-                  <Input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    placeholder="Enter count (1-1000)"
-                    value={customCount}
-                    onChange={(e) => setCustomCount(e.target.value)}
-                  />
-                )}
-              </div>
+              <Label htmlFor="scan-count" className="mb-2 block text-sm font-medium text-foreground">
+                Anzahl der zu scannenden Websites
+              </Label>
+              <Select value={scanCount} onValueChange={setScanCount}>
+                <SelectTrigger id="scan-count">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Website</SelectItem>
+                  <SelectItem value="5">5 Websites</SelectItem>
+                  <SelectItem value="10">10 Websites</SelectItem>
+                  <SelectItem value="25">25 Websites</SelectItem>
+                  <SelectItem value="50">50 Websites</SelectItem>
+                  <SelectItem value="custom">Benutzerdefiniert</SelectItem>
+                </SelectContent>
+              </Select>
+              {scanCount === "custom" && (
+                <Input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  placeholder="Anzahl eingeben (1-1000)"
+                  value={customCount}
+                  onChange={(e) => setCustomCount(e.target.value)}
+                  className="mt-2"
+                />
+              )}
             </div>
 
-            <Button onClick={handleDirectoryScan} disabled={isScanning} className="w-full gap-2">
+            <Button
+              onClick={handleGoogleMapsScan}
+              disabled={isScanning || !industry.trim() || !location.trim()}
+              className="w-full gap-2 h-11 text-base font-semibold"
+              size="lg"
+            >
               {isScanning ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Scanning...
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Searching Google Maps...
                 </>
               ) : (
                 <>
-                  <Search className="h-4 w-4" />
-                  Start Scan
+                  <Search className="h-5 w-5" />
+                  Start Google Maps Search
                 </>
               )}
             </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Durchsucht Google Maps nach Unternehmen mit Verbesserungspotenzial
+            </p>
           </div>
         )}
       </div>

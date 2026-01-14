@@ -12,13 +12,13 @@ pydantic-settings==2.1.0
 # ============================================
 # Database (Supabase)
 # ============================================
-supabase==2.3.0
-postgres==3.1.0  # PostgreSQL adapter (used by Supabase)
+supabase==2.9.1  # Updated to avoid httpx conflicts
+psycopg2-binary==2.9.9  # PostgreSQL adapter (optional, for direct DB access)
 
 # ============================================
 # HTTP Clients
 # ============================================
-httpx==0.26.0  # Async HTTP client (better for FastAPI than requests)
+httpx>=0.24.0  # Async HTTP client (better for FastAPI than requests)
 requests==2.31.0  # Synchronous HTTP client (for some APIs)
 
 # ============================================

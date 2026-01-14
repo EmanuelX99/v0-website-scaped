@@ -171,6 +171,120 @@ export default function Dashboard() {
     }, 3000)
   }
 
+  const handleBulkSearch = async (
+    industry: string,
+    location: string,
+    targetResults: number,
+    filters: {
+      maxRating: string
+      minReviews: string
+      priceLevel: string[]
+      mustHavePhone: boolean
+      maxPhotos: string
+      websiteStatus: string
+    }
+  ) => {
+    try {
+      console.log("Starting bulk search...", { industry, location, targetResults, filters })
+
+      // Prepare request body matching BulkScanRequest schema
+      const requestBody = {
+        industry,
+        location,
+        targetResults,
+        filters: {
+          maxRating: filters.maxRating,
+          minReviews: filters.minReviews ? parseInt(filters.minReviews) : 0,
+          priceLevel: filters.priceLevel,
+          mustHavePhone: filters.mustHavePhone,
+          maxPhotos: filters.maxPhotos,
+          websiteStatus: filters.websiteStatus,
+        },
+      }
+
+      console.log("Request body:", JSON.stringify(requestBody, null, 2))
+
+      // Call backend API
+      const response = await fetch("http://127.0.0.1:8000/api/v1/analyses/bulk-search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log("API response:", data)
+
+      // Check if search was successful
+      if (data.status === "failed") {
+        throw new Error(data.message || "Search failed")
+      }
+
+      // Convert backend response to frontend Analysis format
+      const newAnalyses: Analysis[] = data.leads.map((lead: any) => ({
+        id: lead.id,
+        website: lead.website,
+        companyName: lead.companyName,
+        email: lead.email,
+        phone: lead.phone,
+        location: lead.location,
+        industry: lead.industry,
+        companySize: lead.companySize,
+        uiScore: lead.uiScore,
+        seoScore: lead.seoScore,
+        techScore: lead.techScore,
+        performanceScore: lead.performanceScore,
+        securityScore: lead.securityScore,
+        mobileScore: lead.mobileScore,
+        totalScore: lead.totalScore,
+        status: lead.status,
+        lastChecked: lead.lastChecked,
+        issues: lead.issues,
+        source: lead.source,
+        techStack: lead.techStack,
+        hasAdsPixel: lead.hasAdsPixel,
+        googleSpeedScore: lead.googleSpeedScore,
+        loadingTime: lead.loadingTime,
+        copyrightYear: lead.copyrightYear,
+      }))
+
+      // Add new analyses to the top of the list
+      setAnalyses([...newAnalyses, ...analyses])
+
+      // Also update leads table if score is low
+      const newLeads: Lead[] = newAnalyses
+        .filter((a) => a.totalScore < 60)
+        .map((a) => ({
+          id: a.id,
+          website: a.website,
+          totalScore: a.totalScore,
+          mainIssue: a.issues[0] || "Needs improvement",
+          industry: a.industry || "Unknown",
+          source: a.source || "Google Maps",
+          leadStrength: (a.totalScore < 40 ? "strong" : a.totalScore < 50 ? "medium" : "weak") as
+            | "weak"
+            | "medium"
+            | "strong",
+        }))
+
+      if (newLeads.length > 0) {
+        setLeads([...newLeads, ...leads])
+      }
+
+      console.log(`Successfully added ${newAnalyses.length} analyses`)
+      return true
+    } catch (error) {
+      console.error("Bulk search error:", error)
+      alert(`Search failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+      return false
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -188,7 +302,7 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <div className="space-y-8">
-            <AnalysisForm onAnalyze={handleAnalyze} />
+            <AnalysisForm onAnalyze={handleAnalyze} onBulkSearch={handleBulkSearch} />
             <AnalysisTable analyses={analyses} setAnalyses={setAnalyses} />
             <div className="space-y-4">
               <div>

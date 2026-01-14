@@ -6,12 +6,15 @@ Core business logic for finding high-value leads
 import os
 import uuid
 import logging
+import json
+import re
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 import requests
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +42,22 @@ class DeepAnalyzer:
         # Gemini AI Configuration
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        
+        # Initialize Gemini if API key is available
+        if self.gemini_api_key:
+            genai.configure(api_key=self.gemini_api_key)
+            logger.info(f"✅ Gemini AI configured with model: {self.gemini_model}")
+        else:
+            logger.warning("⚠️  GEMINI_API_KEY not found - AI analysis will be limited")
+        
+        # Google PageSpeed Configuration
+        self.google_cloud_api_key = os.getenv("GOOGLE_CLOUD_API_KEY") or os.getenv("GOOGLE_PAGESPEED_API_KEY")
+        self.pagespeed_endpoint = os.getenv("GOOGLE_PAGESPEED_ENDPOINT", "https://www.googleapis.com/pagespeedonline/v5/runPagespeed")
+        
+        if self.google_cloud_api_key:
+            logger.info("✅ Google PageSpeed API configured")
+        else:
+            logger.warning("⚠️  GOOGLE_CLOUD_API_KEY not found - PageSpeed analysis will be skipped")
         
         # Supabase Configuration
         supabase_url = os.getenv("SUPABASE_URL")
@@ -93,6 +112,13 @@ class DeepAnalyzer:
         Returns:
             Dictionary with results and statistics
         """
+        print("\n" + "🚀 "*30)
+        print(f"🚀 BULK SEARCH STARTED")
+        print(f"   Industry: {industry}")
+        print(f"   Location: {location}")
+        print(f"   Target: {target_results} leads")
+        print("🚀 "*30 + "\n")
+        
         logger.info(f"Starting bulk search: {industry} in {location}, target: {target_results}")
         
         # Initialize counters
@@ -103,10 +129,12 @@ class DeepAnalyzer:
         
         # Build search query
         query = f"{industry} {location}"
+        print(f"🔍 Search Query: {query}\n")
         
         # Pagination loop
         while len(found_leads) < target_results and scanned_count < self.max_scan_limit:
             page_count += 1
+            print(f"\n📄 Page {page_count} | Progress: {len(found_leads)}/{target_results} leads found")
             logger.info(f"Fetching page {page_count} (found: {len(found_leads)}/{target_results})")
             
             # Fetch page from RapidAPI
@@ -116,6 +144,7 @@ class DeepAnalyzer:
                     next_page_token=next_page_token
                 )
             except Exception as e:
+                print(f"❌ Failed to fetch page {page_count}: {str(e)}")
                 logger.error(f"Failed to fetch page {page_count}: {str(e)}")
                 break
             
@@ -124,34 +153,65 @@ class DeepAnalyzer:
             
             # Check if we got results
             if not businesses:
+                print("⚠️  No more results from API")
                 logger.warning("No more results from API")
                 break
             
             scanned_count += len(businesses)
+            print(f"   Scanned: {len(businesses)} businesses (total: {scanned_count})")
             logger.info(f"Scanned {len(businesses)} businesses (total scanned: {scanned_count})")
             
             # Apply Sniper Filters and save valid leads
-            for business in businesses:
+            print(f"\n🔍 Applying Sniper Filters...")
+            passed_count = 0
+            
+            for idx, business in enumerate(businesses, 1):
                 # Check if we've reached target
                 if len(found_leads) >= target_results:
+                    print(f"   🎯 Target reached! Stopping scan.")
                     break
+                
+                business_name = business.get('name', 'Unknown')
                 
                 # Apply filters
                 if not self._passes_filters(business, filters):
                     continue
                 
-                # Valid lead! Save to database
+                passed_count += 1
+                print(f"   ✅ {idx}. {business_name[:40]} - PASSED filters")
+                
+                # Valid lead! Run AI analysis if website exists
                 try:
-                    lead_data = self._save_lead_to_database(
-                        business=business,
-                        industry=industry,
-                        bulk_analysis_id=bulk_analysis_id
-                    )
+                    website = business.get("website")
+                    
+                    if website:
+                        # Full AI Analysis (PageSpeed + Gemini)
+                        print(f"   🤖 Starting AI Analysis for {business_name[:40]}...")
+                        lead_data = self.analyze_single(
+                            url=website,
+                            map_data=business,
+                            bulk_analysis_id=None,
+                            industry=industry
+                        )
+                    else:
+                        # No website - save basic data without AI analysis
+                        print(f"   ⏭️  No website - saving basic data only")
+                        lead_data = self._save_lead_to_database(
+                            business=business,
+                            industry=industry,
+                            bulk_analysis_id=None
+                        )
+                    
                     found_leads.append(lead_data)
-                    logger.info(f"✅ Lead saved: {business.get('name', 'Unknown')} ({len(found_leads)}/{target_results})")
+                    print(f"   💾 Lead complete! ({len(found_leads)}/{target_results})")
+                    logger.info(f"✅ Lead saved: {business_name} ({len(found_leads)}/{target_results})")
                 except Exception as e:
-                    logger.error(f"Failed to save lead: {str(e)}")
+                    print(f"   ❌ Analysis failed: {str(e)[:80]}")
+                    logger.error(f"Failed to process lead: {str(e)}")
                     continue
+            
+            if passed_count == 0:
+                print(f"   ⚠️  No businesses passed filters on this page")
             
             # Check termination conditions
             if not next_page_token:
@@ -171,6 +231,15 @@ class DeepAnalyzer:
             "status": "completed" if len(found_leads) >= target_results else "partial"
         }
         
+        # Print final summary
+        print("\n" + "🏁 "*30)
+        print(f"🏁 BULK SEARCH COMPLETE")
+        print(f"   Status: {result['status'].upper()}")
+        print(f"   Found: {result['total_found']}/{target_results} leads")
+        print(f"   Scanned: {result['total_scanned']} businesses")
+        print(f"   Pages: {result['pages_fetched']}")
+        print("🏁 "*30 + "\n")
+        
         logger.info(f"Bulk search completed: {result['total_found']}/{target_results} leads found")
         return result
     
@@ -189,7 +258,9 @@ class DeepAnalyzer:
         Returns:
             Tuple of (businesses list, next_page_token)
         """
-        url = "https://local-business-data.p.rapidapi.com/search"
+        # Use the configured endpoint URL (from .env)
+        # Local Business Data API uses /search (not /maps/search)
+        url = f"https://{self.rapidapi_host}/search"
         
         headers = {
             "x-rapidapi-key": self.rapidapi_key,
@@ -198,33 +269,47 @@ class DeepAnalyzer:
         
         params = {
             "query": query,
-            "limit": "20",  # RapidAPI limit per page
+            "limit": "20",  # Max results per page
             "language": "de",
             "region": "ch"
         }
         
-        # Add pagination token if available
-        if next_page_token:
-            params["next_page_token"] = next_page_token
+        # Local Business Data API uses 'offset' instead of 'next_page_token'
+        # For now, we'll handle pagination differently if needed
+        # (this API doesn't provide a next_page_token)
+        
+        print(f"⏳ Calling RapidAPI: {url}")
+        print(f"   Query: {query}")
         
         try:
             response = requests.get(
                 url,
                 headers=headers,
                 params=params,
-                timeout=self.rapidapi_timeout
+                timeout=15  # 15 second timeout
             )
             response.raise_for_status()
             
-            data = response.json()
+            response_data = response.json()
             
-            # Extract businesses and next token
-            businesses = data.get("data", [])
-            next_token = data.get("next_page_token")
+            # Local Business Data API returns data under 'data' key
+            businesses = response_data.get("data", [])
+            
+            print(f"✅ RapidAPI done: {len(businesses)} businesses found")
+            
+            # This API doesn't provide next_page_token
+            # We return None to stop pagination after first page
+            next_token = None
             
             return businesses, next_token
             
+        except requests.exceptions.Timeout:
+            print(f"❌ RapidAPI Timeout after 15s")
+            logger.error(f"RapidAPI timeout for query: {query}")
+            return [], None
+            
         except requests.exceptions.RequestException as e:
+            print(f"❌ RapidAPI Error: {str(e)}")
             logger.error(f"RapidAPI request failed: {str(e)}")
             raise
     
@@ -241,16 +326,16 @@ class DeepAnalyzer:
         """
         business_name = business.get("name", "Unknown")
         
-        # Extract business data
+        # Extract business data (Local Business Data API format)
         rating = business.get("rating")
         review_count = business.get("review_count", 0)
-        phone = business.get("phone_number") or business.get("phone")
+        phone = business.get("phone_number")  # Local Business Data uses 'phone_number'
         website = business.get("website")
-        # RapidAPI uses 'photos_sample' or 'photo_count' field
-        photo_count = business.get("photo_count", len(business.get("photos_sample", [])))
+        # Use photo_count field directly
+        photo_count = business.get("photo_count", 0)
         business_status = business.get("business_status")
-        # RapidAPI uses "OPEN" not "OPERATIONAL"
-        is_operational = business_status in ["OPEN", "OPERATIONAL"] if business_status else True
+        # Business status: "OPEN", "CLOSED", etc.
+        is_operational = business_status == "OPEN" if business_status else True
         
         logger.debug(f"Checking {business_name}: rating={rating}, reviews={review_count}, phone={bool(phone)}, website={bool(website)}, photos={photo_count}, status={business_status}")
         
@@ -333,15 +418,15 @@ class DeepAnalyzer:
         # Generate unique ID
         lead_id = str(uuid.uuid4())
         
-        # Extract and clean data
+        # Extract and clean data (Local Business Data API format)
         company_name = business.get("name", "Unknown Business")
-        business_address = business.get("full_address") or business.get("address", "")
-        business_phone = business.get("phone_number") or business.get("phone")
+        business_address = business.get("full_address", "")
+        business_phone = business.get("phone_number")
         website = business.get("website", "")
         rating = business.get("rating")
         review_count = business.get("review_count", 0)
-        photo_count = len(business.get("photos", []))
-        place_id = business.get("google_id") or business.get("place_id")
+        photo_count = business.get("photo_count", 0)
+        place_id = business.get("place_id") or business.get("google_id")
         
         # Calculate initial scores (placeholder - will be enhanced with AI later)
         total_score = self._calculate_initial_score(business)
@@ -385,13 +470,14 @@ class DeepAnalyzer:
             "google_maps_photo_count": photo_count,
             "google_maps_place_id": place_id,
             
-            # Relationships
-            "bulk_analysis_id": bulk_analysis_id,
-            
             # Timestamps
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
+        
+        # Only add bulk_analysis_id if it's provided (optional relationship)
+        if bulk_analysis_id:
+            lead_data["bulk_analysis_id"] = bulk_analysis_id
         
         # Insert into Supabase (upsert to handle duplicates)
         if self.supabase is None:
@@ -467,26 +553,550 @@ class DeepAnalyzer:
         else:
             return "weak"
     
-    def analyze_website_with_ai(self, website_url: str) -> Dict[str, Any]:
+    def analyze_single(
+        self,
+        url: Optional[str],
+        map_data: Dict[str, Any],
+        bulk_analysis_id: Optional[str] = None,
+        industry: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Analyze a website using Gemini AI
+        Complete AI analysis combining PageSpeed Insights and Gemini AI
         
         Args:
-            website_url: URL to analyze
+            url: Website URL (can be None/Empty)
+            map_data: Business data from Google Maps
+            bulk_analysis_id: UUID of the bulk analysis job
         
         Returns:
-            Analysis results with scores and issues
+            Complete analysis with scores, report, and pitch
         """
-        # TODO: Implement Gemini AI website analysis
-        # This will be implemented in Phase 5
-        logger.info(f"AI analysis placeholder for: {website_url}")
+        print("\n" + "="*60)
+        print(f"🔍 Starting AI Analysis")
+        print(f"   Business: {map_data.get('name', 'Unknown')}")
+        print(f"   Website: {url if url else '❌ NO WEBSITE'}")
+        print("="*60)
+        
+        logger.info(f"Starting AI analysis for: {map_data.get('name', 'Unknown')}")
+        
+        # Clean URL
+        url = url.strip() if url else None
+        has_website = bool(url and url != "")
+        
+        # Step 1: PageSpeed Insights (if website exists)
+        pagespeed_data = None
+        if has_website:
+            print("\n📊 Step 1/3: PageSpeed Insights")
+            pagespeed_data = self._fetch_pagespeed_data(url)
+        else:
+            print("\n📊 Step 1/3: PageSpeed (skipped - no website)")
+        
+        # Step 2: Gemini AI Analysis
+        print("\n🤖 Step 2/3: Gemini AI Analysis")
+        gemini_data = self._analyze_with_gemini(url, map_data, pagespeed_data)
+        
+        # Step 3: Merge all data
+        print("\n🔗 Step 3/3: Merging Data & Saving")
+        complete_analysis = self._merge_analysis_data(
+            url=url,
+            map_data=map_data,
+            pagespeed_data=pagespeed_data,
+            gemini_data=gemini_data,
+            bulk_analysis_id=bulk_analysis_id,
+            industry=industry
+        )
+        
+        # Step 4: Save to database
+        if self.supabase:
+            try:
+                print("💾 Saving to Supabase...")
+                self.supabase.table("analyses").upsert(
+                    complete_analysis,
+                    on_conflict="google_maps_place_id"
+                ).execute()
+                print(f"✅ Saved to database: {complete_analysis['id']}")
+                logger.info(f"✅ Analysis saved to database: {complete_analysis['id']}")
+            except Exception as e:
+                print(f"⚠️  Database save failed: {str(e)[:100]}")
+                logger.error(f"⚠️  Failed to save analysis: {str(e)}")
+        else:
+            print("⏭️  Supabase not available, skipping save")
+        
+        print("\n✅ AI Analysis Complete!")
+        print("="*60 + "\n")
+        
+        return complete_analysis
+    
+    def _fetch_pagespeed_data(self, url: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch performance metrics from Google PageSpeed Insights
+        
+        Args:
+            url: Website URL to analyze
+        
+        Returns:
+            PageSpeed data or None if failed
+        """
+        if not self.google_cloud_api_key:
+            print("⏭️  PageSpeed API key not available, skipping...")
+            logger.warning("PageSpeed API key not available, skipping...")
+            return None
+        
+        print(f"⏳ Calling PageSpeed Insights for: {url[:50]}...")
+        
+        try:
+            params = {
+                "url": url,
+                "key": self.google_cloud_api_key,
+                "strategy": "mobile",  # mobile or desktop
+                "category": "performance"
+            }
+            
+            response = requests.get(
+                self.pagespeed_endpoint,
+                params=params,
+                timeout=45  # Increased to 45s to reduce timeouts
+            )
+            
+            if response.status_code != 200:
+                print(f"⚠️  PageSpeed returned status {response.status_code}")
+                logger.warning(f"PageSpeed API returned {response.status_code}")
+                return None
+            
+            data = response.json()
+            
+            # Extract key metrics
+            lighthouse_result = data.get("lighthouseResult", {})
+            categories = lighthouse_result.get("categories", {})
+            performance = categories.get("performance", {})
+            
+            # Score is 0-1, convert to 0-100
+            performance_score = int(performance.get("score", 0) * 100)
+            
+            # Extract loading time from audits
+            audits = lighthouse_result.get("audits", {})
+            speed_index = audits.get("speed-index", {})
+            loading_time = speed_index.get("displayValue", "N/A")
+            
+            print(f"✅ PageSpeed done: Score={performance_score}/100, Time={loading_time}")
+            logger.info(f"✅ PageSpeed score: {performance_score}/100, Loading: {loading_time}")
+            
+            return {
+                "performance_score": performance_score,
+                "loading_time": loading_time,
+                "lighthouse_data": lighthouse_result
+            }
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ PageSpeed Timeout after 45s")
+            logger.error(f"PageSpeed timeout for: {url}")
+            return None
+            
+        except Exception as e:
+            print(f"❌ PageSpeed Error: {str(e)[:100]}")
+            logger.error(f"PageSpeed fetch failed: {str(e)}")
+            return None
+    
+    def _analyze_with_gemini(
+        self,
+        url: Optional[str],
+        map_data: Dict[str, Any],
+        pagespeed_data: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Analyze business with Gemini AI
+        
+        Args:
+            url: Website URL (can be None)
+            map_data: Google Maps business data
+            pagespeed_data: PageSpeed Insights data (can be None)
+        
+        Returns:
+            Gemini analysis with scores, report, and pitch
+        """
+        if not self.gemini_api_key:
+            print("⏭️  Gemini API key not available, using fallback...")
+            logger.warning("Gemini API key not available, returning fallback data...")
+            return self._get_fallback_analysis(url, map_data)
+        
+        print(f"⏳ Calling Gemini AI for: {map_data.get('name', 'Unknown')[:50]}...")
+        
+        try:
+            # Construct prompt
+            prompt = self._build_gemini_prompt(url, map_data, pagespeed_data)
+            
+            # Call Gemini with timeout handling
+            model = genai.GenerativeModel(self.gemini_model)
+            
+            # Gemini doesn't support timeout parameter directly, but we can catch exceptions
+            response = model.generate_content(
+                prompt,
+                generation_config={
+                    "temperature": 0.3,  # Lower temperature for more consistent JSON
+                    "max_output_tokens": 4096,  # Increased to prevent truncation
+                    "top_p": 0.95,
+                    "top_k": 40,
+                }
+            )
+            
+            # Parse response
+            response_text = response.text
+            logger.debug(f"Gemini raw response length: {len(response_text)} chars")
+            
+            # DEBUG: Print FULL response
+            print(f"📝 Gemini FULL raw response ({len(response_text)} chars):")
+            print(response_text)
+            print("=" * 80)
+            
+            # Clean and parse JSON
+            gemini_data = self._parse_gemini_response(response_text)
+            
+            # Check if parsing failed (returns None)
+            if gemini_data is None:
+                print(f"❌ Gemini JSON Parse Failed - using fallback")
+                return self._get_fallback_analysis(url, map_data)
+            
+            print(f"✅ Gemini done: Lead Quality = {gemini_data.get('lead_quality', 'Unknown')}")
+            logger.info(f"✅ Gemini analysis complete: Lead Quality = {gemini_data.get('lead_quality', 'Unknown')}")
+            
+            return gemini_data
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Gemini JSON Parse Error: {str(e)[:100]}")
+            logger.error(f"Gemini JSON parsing failed: {str(e)}")
+            return self._get_fallback_analysis(url, map_data)
+            
+        except Exception as e:
+            print(f"❌ Gemini Error: {str(e)[:100]}")
+            logger.error(f"Gemini analysis failed: {str(e)}")
+            return self._get_fallback_analysis(url, map_data)
+    
+    def _build_gemini_prompt(
+        self,
+        url: Optional[str],
+        map_data: Dict[str, Any],
+        pagespeed_data: Optional[Dict[str, Any]]
+    ) -> str:
+        """
+        Build the Gemini AI prompt
+        
+        Args:
+            url: Website URL
+            map_data: Google Maps data
+            pagespeed_data: PageSpeed data
+        
+        Returns:
+            Complete prompt string
+        """
+        # Extract business info
+        business_name = map_data.get("name", "Unknown Business")
+        business_type = map_data.get("type", "Unknown")
+        address = map_data.get("full_address") or map_data.get("address", "No address")
+        rating = map_data.get("rating", "N/A")
+        reviews = map_data.get("review_count", 0)
+        
+        # Build context
+        website_context = f"Website: {url}" if url else "⚠️ KEIN WEBSITE VORHANDEN!"
+        pagespeed_context = ""
+        if pagespeed_data:
+            score = pagespeed_data.get("performance_score", "N/A")
+            loading = pagespeed_data.get("loading_time", "N/A")
+            pagespeed_context = f"\nPageSpeed Score: {score}/100, Loading Time: {loading}"
+        
+        prompt = f"""Analysiere dieses Business und erstelle einen Lead-Report.
+
+Business: {business_name}
+Typ: {business_type}
+Adresse: {address}
+{website_context}
+Rating: {rating} ({reviews} Bewertungen){pagespeed_context}
+
+ANTWORT NUR MIT DIESEM JSON FORMAT (keine anderen Texte, keine Markdown):
+
+{{
+  "lead_quality": "High",
+  "tech_stack": ["WordPress"],
+  "scores": {{
+    "ui": 60,
+    "ux": 55,
+    "seo": 50,
+    "content": 65,
+    "total": 58
+  }},
+  "report_card": {{
+    "executive_summary": "Kurze Zusammenfassung max 100 Zeichen",
+    "issues_found": ["Issue 1", "Issue 2", "Issue 3"],
+    "recommendations": ["Empfehlung 1", "Empfehlung 2", "Empfehlung 3"]
+  }},
+  "email_pitch": {{
+    "subject": "Betreff max 50 Zeichen",
+    "body_text": "Email Text max 150 Zeichen"
+  }}
+}}
+
+WICHTIG:
+1. Antworte NUR mit dem JSON (keine anderen Texte)
+2. Keine Sonderzeichen in Strings (keine Umlaute, nur ae/oe/ue)
+3. Kurze Texte (siehe Limits oben)
+4. MUSS vollstaendiges JSON sein mit allen Feldern"""
+        
+        return prompt
+    
+    def _parse_gemini_response(self, response_text: str) -> Dict[str, Any]:
+        """
+        Parse Gemini response and extract JSON with robust error handling
+        
+        Args:
+            response_text: Raw response from Gemini
+        
+        Returns:
+            Parsed JSON data or None if parsing fails
+        """
+        try:
+            # Remove markdown code blocks if present
+            cleaned = response_text.strip()
+            cleaned = re.sub(r'^```json\s*', '', cleaned)
+            cleaned = re.sub(r'^```\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```$', '', cleaned)
+            cleaned = cleaned.strip()
+            
+            # Try to fix common JSON issues
+            # Replace smart quotes with regular quotes
+            cleaned = cleaned.replace('"', '"').replace('"', '"')
+            cleaned = cleaned.replace(''', "'").replace(''', "'")
+            
+            # Try to find JSON object if there's extra text
+            if not cleaned.startswith('{'):
+                # Find first { and last }
+                start = cleaned.find('{')
+                end = cleaned.rfind('}')
+                if start != -1 and end != -1:
+                    cleaned = cleaned[start:end+1]
+            
+            # Check if JSON is truncated (incomplete closing braces)
+            if cleaned.count('{') > cleaned.count('}'):
+                logger.warning("JSON appears truncated - attempting repair")
+                # Try to close the JSON properly
+                missing_braces = cleaned.count('{') - cleaned.count('}')
+                cleaned += '}' * missing_braces
+            
+            # Handle unterminated strings
+            # Count quotes to see if string is not closed
+            quote_count = cleaned.count('"') - cleaned.count('\\"')
+            if quote_count % 2 != 0:
+                logger.warning("Unterminated string detected - attempting repair")
+                # Try to close the string and JSON
+                cleaned += '"}'
+            
+            # Try to parse JSON
+            data = json.loads(cleaned)
+            
+            # Validate required fields
+            required_fields = ["lead_quality", "scores", "report_card", "email_pitch"]
+            for field in required_fields:
+                if field not in data:
+                    logger.warning(f"Missing required field: {field}")
+                    raise ValueError(f"Missing required field: {field}")
+            
+            # Validate nested structures
+            if not isinstance(data.get("scores"), dict):
+                raise ValueError("scores must be a dict")
+            if not isinstance(data.get("report_card"), dict):
+                raise ValueError("report_card must be a dict")
+            if not isinstance(data.get("email_pitch"), dict):
+                raise ValueError("email_pitch must be a dict")
+            
+            logger.info("✅ Successfully parsed Gemini JSON response")
+            return data
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Gemini response: {str(e)}")
+            logger.debug(f"Cleaned response (first 500 chars): {cleaned[:500] if 'cleaned' in locals() else 'N/A'}")
+            logger.debug(f"Raw response length: {len(response_text)} chars")
+            # Don't raise - return None to trigger fallback
+            return None
+        except Exception as e:
+            logger.error(f"Failed to parse Gemini response: {str(e)}")
+            logger.debug(f"Raw response (first 500 chars): {response_text[:500]}")
+            # Don't raise - return None to trigger fallback
+            return None
+    
+    def _get_fallback_analysis(
+        self,
+        url: Optional[str],
+        map_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Generate fallback analysis when Gemini is not available
+        
+        Args:
+            url: Website URL
+            map_data: Google Maps data
+        
+        Returns:
+            Fallback analysis data
+        """
+        business_name = map_data.get("name", "Unknown Business")
+        has_website = bool(url)
+        rating = map_data.get("rating", 5.0)
+        
+        # Determine lead quality based on simple heuristics
+        if not has_website:
+            lead_quality = "High"
+            main_issue = "Keine Website vorhanden"
+        elif rating and rating < 4.0:
+            lead_quality = "High"
+            main_issue = "Niedrige Bewertung und Verbesserungspotenzial"
+        else:
+            lead_quality = "Medium"
+            main_issue = "Optimierungspotenzial vorhanden"
         
         return {
-            "ui_score": 50,
-            "seo_score": 50,
-            "tech_score": 50,
-            "issues": ["Placeholder: Full AI analysis pending"]
+            "lead_quality": lead_quality,
+            "tech_stack": ["Unknown"],
+            "scores": {
+                "ui": 50,
+                "ux": 50,
+                "seo": 50,
+                "content": 50,
+                "total": 50
+            },
+            "report_card": {
+                "executive_summary": f"{business_name} hat {main_issue}. Eine professionelle Website könnte die Online-Präsenz deutlich verbessern.",
+                "issues_found": [
+                    main_issue,
+                    "Analyse nur mit Basis-Daten durchgeführt",
+                    "Detaillierte Analyse benötigt AI-Integration"
+                ],
+                "recommendations": [
+                    "Professionelle Website erstellen oder optimieren",
+                    "SEO-Optimierung durchführen",
+                    "Mobile Performance verbessern"
+                ]
+            },
+            "email_pitch": {
+                "subject": f"Website-Potenzial für {business_name}",
+                "body_text": f"Guten Tag,\n\nich habe {business_name} auf Google Maps gefunden und festgestellt: {main_issue}. In Ihrer Branche ist eine professionelle Online-Präsenz heute unverzichtbar. Wir helfen Unternehmen wie Ihrem, mehr Kunden online zu gewinnen. Haben Sie 15 Minuten für ein kurzes Gespräch?\n\nMit freundlichen Grüßen"
+            }
         }
+    
+    def _merge_analysis_data(
+        self,
+        url: Optional[str],
+        map_data: Dict[str, Any],
+        pagespeed_data: Optional[Dict[str, Any]],
+        gemini_data: Dict[str, Any],
+        bulk_analysis_id: Optional[str],
+        industry: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Merge all analysis data into final format
+        
+        Args:
+            url: Website URL
+            map_data: Google Maps data
+            pagespeed_data: PageSpeed data
+            gemini_data: Gemini analysis data
+            bulk_analysis_id: Bulk analysis ID
+        
+        Returns:
+            Complete analysis data ready for database
+        """
+        # Generate ID
+        analysis_id = str(uuid.uuid4())
+        
+        # Extract map data (Local Business Data API format)
+        company_name = map_data.get("name", "Unknown Business")
+        business_address = map_data.get("full_address", "")
+        business_phone = map_data.get("phone_number")
+        rating = map_data.get("rating")
+        review_count = map_data.get("review_count", 0)
+        photo_count = map_data.get("photo_count", 0)
+        place_id = map_data.get("place_id") or map_data.get("google_id")
+        # Use provided industry or fall back to map_data type
+        industry = industry or map_data.get("type", "Unknown")
+        
+        # Extract Gemini scores
+        scores = gemini_data.get("scores", {})
+        ui_score = scores.get("ui", 50)
+        ux_score = scores.get("ux", 50)
+        seo_score = scores.get("seo", 50)
+        content_score = scores.get("content", 50)
+        total_score = scores.get("total", 50)
+        
+        # Extract PageSpeed score
+        performance_score = pagespeed_data.get("performance_score") if pagespeed_data else None
+        loading_time = pagespeed_data.get("loading_time", "N/A") if pagespeed_data else "N/A"
+        
+        # Calculate Google Speed Score (use PageSpeed if available, otherwise estimate)
+        google_speed_score = performance_score if performance_score is not None else max(0, total_score - 20)
+        
+        # Extract tech stack
+        tech_stack = gemini_data.get("tech_stack", ["Unknown"])
+        
+        # Extract report card
+        report_card = gemini_data.get("report_card", {})
+        issues_found = report_card.get("issues_found", [])
+        
+        # Determine lead strength
+        lead_quality = gemini_data.get("lead_quality", "Medium")
+        lead_strength_map = {"High": "strong", "Medium": "medium", "Low": "weak"}
+        lead_strength = lead_strength_map.get(lead_quality, "medium")
+        
+        # Build complete analysis
+        complete_analysis = {
+            "id": analysis_id,
+            "website": url or f"no-website-{place_id}",
+            "company_name": company_name,
+            "email": "",  # To be extracted from website scraping
+            "business_phone": business_phone,
+            "business_address": business_address,
+            "industry": industry,
+            "company_size": None,
+            
+            # Scores
+            "ui_score": ui_score,
+            "seo_score": seo_score,
+            "tech_score": ux_score,  # Map UX to tech_score
+            "performance_score": performance_score,
+            "security_score": None,
+            "mobile_score": None,
+            "total_score": total_score,
+            
+            # Status
+            "status": "completed",
+            "last_checked": datetime.utcnow().isoformat(),
+            "source": "Google Maps",
+            
+            # Technical details
+            "tech_stack": tech_stack,
+            "has_ads_pixel": False,  # To be detected in website scraping
+            "google_speed_score": google_speed_score,
+            "loading_time": loading_time,
+            "copyright_year": datetime.utcnow().year,  # To be extracted from website
+            
+            # Lead classification
+            "lead_strength": lead_strength,
+            
+            # Google Maps specific
+            "google_maps_rating": float(rating) if rating else None,
+            "google_maps_reviews": review_count,
+            "google_maps_photo_count": photo_count,
+            "google_maps_place_id": place_id,
+            
+            # AI Analysis - Temporarily commented out (column doesn't exist in Supabase yet)
+            # "ai_report": json.dumps(gemini_data, ensure_ascii=False),
+            
+            # Timestamps
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Only add bulk_analysis_id if it's provided (optional relationship)
+        if bulk_analysis_id:
+            complete_analysis["bulk_analysis_id"] = bulk_analysis_id
+        
+        return complete_analysis
 
 
 # Singleton instance

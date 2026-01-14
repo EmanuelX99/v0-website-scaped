@@ -15,9 +15,22 @@ import { Search, Loader2, Briefcase, MapPin, SlidersHorizontal } from "lucide-re
 
 interface AnalysisFormProps {
   onAnalyze: (url: string) => void
+  onBulkSearch?: (
+    industry: string,
+    location: string,
+    targetResults: number,
+    filters: {
+      maxRating: string
+      minReviews: string
+      priceLevel: string[]
+      mustHavePhone: boolean
+      maxPhotos: string
+      websiteStatus: string
+    }
+  ) => Promise<boolean>
 }
 
-export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
+export function AnalysisForm({ onAnalyze, onBulkSearch }: AnalysisFormProps) {
   const [url, setUrl] = useState("")
   const [sourceMode, setSourceMode] = useState<"manual" | "google-maps">("manual")
   const [isScanning, setIsScanning] = useState(false)
@@ -44,24 +57,49 @@ export function AnalysisForm({ onAnalyze }: AnalysisFormProps) {
     }
   }
 
-  const handleGoogleMapsScan = () => {
+  const handleGoogleMapsScan = async () => {
     if (!industry.trim() || !location.trim()) return
 
     setIsScanning(true)
     const count = scanCount === "custom" ? Number.parseInt(customCount) || 10 : Number.parseInt(scanCount)
 
-    // Simulate scanning
-    setTimeout(() => {
-      // Add placeholder analyses
-      for (let i = 0; i < Math.min(count, 5); i++) {
-        setTimeout(() => {
-          onAnalyze(`google-maps-${Date.now()}-${i}.com`)
-        }, i * 300)
+    try {
+      // Call backend API via onBulkSearch callback
+      if (onBulkSearch) {
+        const success = await onBulkSearch(industry, location, count, {
+          maxRating,
+          minReviews,
+          priceLevel,
+          mustHavePhone,
+          maxPhotos,
+          websiteStatus,
+        })
+
+        if (success) {
+          // Clear form on success
+          setIndustry("")
+          setLocation("")
+          // Reset filters to defaults
+          setMaxRating("any")
+          setMinReviews("")
+          setPriceLevel([])
+          setMustHavePhone(false)
+          setMaxPhotos("any")
+          setWebsiteStatus("any")
+        }
+      } else {
+        // Fallback to old behavior if onBulkSearch not provided
+        for (let i = 0; i < Math.min(count, 5); i++) {
+          setTimeout(() => {
+            onAnalyze(`google-maps-${Date.now()}-${i}.com`)
+          }, i * 300)
+        }
       }
+    } catch (error) {
+      console.error("Scan error:", error)
+    } finally {
       setIsScanning(false)
-      setIndustry("")
-      setLocation("")
-    }, 1000)
+    }
   }
 
   return (

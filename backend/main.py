@@ -9,9 +9,16 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Import analyzer
+from analyzer import get_analyzer
 
 # ============================================
 # Pydantic Models - API Contract
@@ -207,7 +214,7 @@ async def root():
 
 
 @app.post("/api/v1/analyses/bulk-search", response_model=BulkScanResponse)
-async def bulk_search(request: BulkScanRequest):
+async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTasks):
     """
     Bulk Google Maps Search endpoint
     
@@ -217,7 +224,7 @@ async def bulk_search(request: BulkScanRequest):
     # Generate analysis ID
     analysis_id = str(uuid.uuid4())
     
-    # Print received filters to console (for debugging)
+    # Print received request (for debugging)
     print("=" * 60)
     print("BULK SEARCH REQUEST RECEIVED")
     print("=" * 60)
@@ -234,15 +241,84 @@ async def bulk_search(request: BulkScanRequest):
     print(f"Website Status: {request.filters.websiteStatus}")
     print("=" * 60)
     
-    # Return dummy response (to prove connection works)
-    return BulkScanResponse(
-        analysisId=analysis_id,
-        status="processing",
-        totalFound=0,
-        totalScanned=0,
-        leads=[],
-        message=f"Bulk search initiated for {request.industry} in {request.location}. Processing..."
-    )
+    try:
+        # Get analyzer instance
+        analyzer = get_analyzer()
+        
+        # Convert filters to dictionary
+        filters_dict = request.filters.dict() if request.filters else {}
+        
+        # Process bulk search (synchronous for now)
+        result = analyzer.process_bulk_search(
+            industry=request.industry,
+            location=request.location,
+            target_results=request.targetResults,
+            filters=filters_dict,
+            bulk_analysis_id=analysis_id
+        )
+        
+        # Convert leads to AnalysisResponse format
+        leads = []
+        for lead_data in result.get("leads", []):
+            # Map database fields to frontend format
+            analysis_response = AnalysisResponse(
+                id=lead_data["id"],
+                website=lead_data.get("website", ""),
+                companyName=lead_data.get("company_name", ""),
+                email=lead_data.get("email", ""),
+                phone=lead_data.get("business_phone"),
+                location=lead_data.get("business_address", ""),
+                industry=lead_data.get("industry"),
+                companySize=lead_data.get("company_size"),
+                uiScore=lead_data.get("ui_score", 0),
+                seoScore=lead_data.get("seo_score", 0),
+                techScore=lead_data.get("tech_score", 0),
+                performanceScore=lead_data.get("performance_score"),
+                securityScore=lead_data.get("security_score"),
+                mobileScore=lead_data.get("mobile_score"),
+                totalScore=lead_data.get("total_score", 0),
+                status=lead_data.get("status", "completed"),
+                lastChecked=lead_data.get("last_checked", datetime.utcnow().isoformat()),
+                issues=[],  # Will be populated later
+                source=lead_data.get("source", "Google Maps"),
+                techStack=lead_data.get("tech_stack", []),
+                hasAdsPixel=lead_data.get("has_ads_pixel", False),
+                googleSpeedScore=lead_data.get("google_speed_score", 0),
+                loadingTime=lead_data.get("loading_time", "0s"),
+                copyrightYear=lead_data.get("copyright_year", datetime.utcnow().year),
+                leadStrength=lead_data.get("lead_strength"),
+                googleMapsRating=lead_data.get("google_maps_rating"),
+                googleMapsReviews=lead_data.get("google_maps_reviews"),
+                googleMapsPriceLevel=lead_data.get("google_maps_price_level"),
+                googleMapsPhotoCount=lead_data.get("google_maps_photo_count"),
+                googleMapsPlaceId=lead_data.get("google_maps_place_id")
+            )
+            leads.append(analysis_response)
+        
+        # Return successful response
+        return BulkScanResponse(
+            analysisId=analysis_id,
+            status=result.get("status", "completed"),
+            totalFound=result.get("total_found", 0),
+            totalScanned=result.get("total_scanned", 0),
+            leads=leads,
+            message=f"Found {result.get('total_found', 0)} leads matching criteria"
+        )
+        
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Return error response
+        return BulkScanResponse(
+            analysisId=analysis_id,
+            status="failed",
+            totalFound=0,
+            totalScanned=0,
+            leads=[],
+            message=f"Search failed: {str(e)}"
+        )
 
 
 @app.get("/api/v1/analyses")

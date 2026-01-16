@@ -794,9 +794,13 @@ class DeepAnalyzer:
             if email:
                 security_data["email"] = email
             
+            # Mobile-Friendly Check (viewport meta tag)
+            mobile_score = self._calculate_mobile_score(response.text or "")
+            security_data["mobile_score"] = mobile_score
+            
             score = security_data['security_score']
             issues_count = len(security_data['security_issues'])
-            print(f"✅ Security audit done: Score={score}/100, Issues={issues_count}")
+            print(f"✅ Security audit done: Score={score}/100, Issues={issues_count}, Mobile={mobile_score}/100")
             
             return security_data
             
@@ -805,7 +809,8 @@ class DeepAnalyzer:
             logger.warning(f"Security check timeout for: {url}")
             return {
                 "security_score": None,
-                "security_issues": ["Could not perform security audit - Website timeout"]
+                "security_issues": ["Could not perform security audit - Website timeout"],
+                "mobile_score": 0
             }
         
         except requests.exceptions.RequestException as e:
@@ -813,7 +818,8 @@ class DeepAnalyzer:
             logger.warning(f"Security check failed for {url}: {str(e)}")
             return {
                 "security_score": None,
-                "security_issues": [f"Could not perform security audit - {str(e)[:100]}"]
+                "security_issues": [f"Could not perform security audit - {str(e)[:100]}"],
+                "mobile_score": 0
             }
     
     def _calculate_security_score(self, response: requests.Response) -> Dict[str, Any]:
@@ -960,7 +966,56 @@ class DeepAnalyzer:
                     return email
 
         return emails[0]
-    
+
+    def _calculate_mobile_score(self, html: str) -> int:
+        """
+        Check if website is mobile-friendly based on viewport meta tag.
+        
+        Args:
+            html: Website HTML content
+        
+        Returns:
+            Mobile score 0-100:
+            - 0 = No viewport tag (not mobile-optimized)
+            - 80-100 = Viewport present + responsive indicators
+        """
+        if not html:
+            return 0
+        
+        # Limit scanning to first 50KB (viewport is always in <head>)
+        snippet = html[:50000].lower()
+        
+        # Check for viewport meta tag (flexible pattern)
+        viewport_pattern = r'<meta\s+name=["\']?viewport["\']?'
+        has_viewport = bool(re.search(viewport_pattern, snippet, re.IGNORECASE))
+        
+        if not has_viewport:
+            logger.debug("Mobile check: No viewport tag found")
+            return 0  # Clear fail - not mobile-friendly
+        
+        # Base score: viewport present
+        score = 80
+        
+        # Bonus points for responsive framework indicators
+        responsive_hints = [
+            ('bootstrap', 4),      # Bootstrap framework
+            ('responsive', 3),     # Responsive CSS
+            ('@media', 4),        # Media queries
+            ('flexbox', 3),       # Flexbox layout
+            ('grid-template', 3), # CSS Grid
+        ]
+        
+        for hint, bonus in responsive_hints:
+            if hint in snippet:
+                score += bonus
+                logger.debug(f"Mobile check: Found '{hint}' (+{bonus} points)")
+        
+        # Cap at 100
+        final_score = min(100, score)
+        logger.info(f"✅ Mobile-friendly check: Score={final_score}/100 (viewport={'found' if has_viewport else 'missing'})")
+        
+        return final_score
+     
     def _fetch_pagespeed_data(self, url: str) -> Optional[Dict[str, Any]]:
         """
         Fetch performance metrics from Google PageSpeed Insights (Desktop only)
@@ -1385,9 +1440,10 @@ JSON Format:
         # Calculate Google Speed Score (use PageSpeed if available, otherwise estimate)
         google_speed_score = performance_score if performance_score is not None else max(0, total_score - 20)
         
-        # Extract Security score
+        # Extract Security score and Mobile score
         security_score = security_data.get("security_score") if security_data else None
         security_issues = security_data.get("security_issues", []) if security_data else []
+        mobile_score = security_data.get("mobile_score") if security_data else None
         
         # Extract tech stack
         tech_stack = gemini_data.get("tech_stack", ["Unknown"])
@@ -1424,7 +1480,7 @@ JSON Format:
             "tech_score": ux_score,  # Map UX to tech_score
             "performance_score": performance_score,
             "security_score": security_score,  # Calculated from Security Header Audit
-            "mobile_score": None,
+            "mobile_score": mobile_score,  # Calculated from viewport meta tag check
             "total_score": total_score,
             
             # Status

@@ -279,7 +279,7 @@ async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTask
                 totalScore=lead_data.get("total_score", 0),
                 status=lead_data.get("status", "completed"),
                 lastChecked=lead_data.get("last_checked", datetime.utcnow().isoformat()),
-                issues=[],  # Will be populated later
+                issues=lead_data.get("issues", []),
                 source=lead_data.get("source", "Google Maps"),
                 techStack=lead_data.get("tech_stack", []),
                 hasAdsPixel=lead_data.get("has_ads_pixel", False),

@@ -10,6 +10,8 @@ import json
 import re
 from typing import List, Dict, Optional, Any
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 import requests
 from supabase import create_client, Client
@@ -34,6 +36,9 @@ class DeepAnalyzer:
         """Initialize the analyzer with API clients"""
         # Load environment variables explicitly
         load_dotenv()
+        
+        # Thread-safety lock for parallel processing
+        self._print_lock = threading.Lock()
         
         # RapidAPI Configuration
         self.rapidapi_key = os.getenv("RAPIDAPI_KEY")
@@ -161,9 +166,9 @@ class DeepAnalyzer:
             print(f"   Scanned: {len(businesses)} businesses (total: {scanned_count})")
             logger.info(f"Scanned {len(businesses)} businesses (total scanned: {scanned_count})")
             
-            # Apply Sniper Filters and save valid leads
+            # Apply Sniper Filters to collect valid businesses
             print(f"\n🔍 Applying Sniper Filters...")
-            passed_count = 0
+            passed_businesses = []
             
             for idx, business in enumerate(businesses, 1):
                 # Check if we've reached target
@@ -177,16 +182,28 @@ class DeepAnalyzer:
                 if not self._passes_filters(business, filters):
                     continue
                 
-                passed_count += 1
                 print(f"   ✅ {idx}. {business_name[:40]} - PASSED filters")
+                passed_businesses.append(business)
                 
-                # Valid lead! Run AI analysis if website exists
+                # Stop collecting if we have enough to reach target
+                if len(passed_businesses) + len(found_leads) >= target_results:
+                    break
+            
+            if len(passed_businesses) == 0:
+                print(f"   ⚠️  No businesses passed filters on this page")
+                continue
+            
+            # Process leads in parallel (3 at a time)
+            print(f"\n🚀 Processing {len(passed_businesses)} leads in parallel (max 3 concurrent)...")
+            
+            def analyze_business(business):
+                """Helper function to analyze a single business (thread-safe)"""
+                business_name = business.get('name', 'Unknown')
                 try:
                     website = business.get("website")
                     
                     if website:
-                        # Full AI Analysis (PageSpeed + Gemini)
-                        print(f"   🤖 Starting AI Analysis for {business_name[:40]}...")
+                        # Full AI Analysis (PageSpeed + Security + Gemini)
                         lead_data = self.analyze_single(
                             url=website,
                             map_data=business,
@@ -195,23 +212,37 @@ class DeepAnalyzer:
                         )
                     else:
                         # No website - save basic data without AI analysis
-                        print(f"   ⏭️  No website - saving basic data only")
+                        print(f"   ⏭️  {business_name[:40]}: No website - saving basic data only")
                         lead_data = self._save_lead_to_database(
                             business=business,
                             industry=industry,
                             bulk_analysis_id=None
                         )
                     
-                    found_leads.append(lead_data)
-                    print(f"   💾 Lead complete! ({len(found_leads)}/{target_results})")
-                    logger.info(f"✅ Lead saved: {business_name} ({len(found_leads)}/{target_results})")
+                    return {"success": True, "data": lead_data, "name": business_name}
                 except Exception as e:
-                    print(f"   ❌ Analysis failed: {str(e)[:80]}")
-                    logger.error(f"Failed to process lead: {str(e)}")
-                    continue
+                    logger.error(f"Failed to process {business_name}: {str(e)}")
+                    return {"success": False, "error": str(e), "name": business_name}
             
-            if passed_count == 0:
-                print(f"   ⚠️  No businesses passed filters on this page")
+            # Use ThreadPoolExecutor for parallel processing
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                # Submit all businesses to the thread pool
+                futures = {executor.submit(analyze_business, biz): biz for biz in passed_businesses}
+                
+                # Process results as they complete
+                for future in as_completed(futures):
+                    result = future.result()
+                    
+                    if result["success"]:
+                        found_leads.append(result["data"])
+                        print(f"   💾 Lead complete! {result['name'][:40]} ({len(found_leads)}/{target_results})")
+                        logger.info(f"✅ Lead saved: {result['name']} ({len(found_leads)}/{target_results})")
+                    else:
+                        print(f"   ❌ Analysis failed: {result['name'][:40]} - {result['error'][:80]}")
+                    
+                    # Check if we've reached target
+                    if len(found_leads) >= target_results:
+                        break
             
             # Check termination conditions
             if not next_page_token:
@@ -586,25 +617,61 @@ class DeepAnalyzer:
         # Step 1: PageSpeed Insights (if website exists)
         pagespeed_data = None
         if has_website:
-            print("\n📊 Step 1/3: PageSpeed Insights")
+            print("\n📊 Step 1/4: PageSpeed Insights")
             pagespeed_data = self._fetch_pagespeed_data(url)
         else:
-            print("\n📊 Step 1/3: PageSpeed (skipped - no website)")
+            print("\n📊 Step 1/4: PageSpeed (skipped - no website)")
         
-        # Step 2: Gemini AI Analysis
-        print("\n🤖 Step 2/3: Gemini AI Analysis")
-        gemini_data = self._analyze_with_gemini(url, map_data, pagespeed_data)
+        # Step 2: Security Header Audit (if website exists)
+        security_data = None
+        if has_website:
+            print("\n🔒 Step 2/4: Security Header Audit")
+            security_data = self._fetch_website_for_security_check(url)
+        else:
+            print("\n🔒 Step 2/4: Security Audit (skipped - no website)")
         
-        # Step 3: Merge all data
-        print("\n🔗 Step 3/3: Merging Data & Saving")
+        # Step 3: Gemini AI Analysis
+        print("\n🤖 Step 3/4: Gemini AI Analysis")
+        gemini_data = self._analyze_with_gemini(url, map_data, pagespeed_data, security_data)
+        
+        # Step 4: Merge all data
+        print("\n🔗 Step 4/4: Merging Data & Saving")
         complete_analysis = self._merge_analysis_data(
             url=url,
             map_data=map_data,
             pagespeed_data=pagespeed_data,
+            security_data=security_data,
             gemini_data=gemini_data,
             bulk_analysis_id=bulk_analysis_id,
             industry=industry
         )
+
+        # Build API-friendly issues list (not persisted to Supabase)
+        issues_for_ui: List[str] = []
+        if security_data and security_data.get("security_issues"):
+            issues_for_ui.extend(security_data.get("security_issues", [])[:3])
+
+        if has_website:
+            if pagespeed_data is None:
+                issues_for_ui.append("PageSpeed: Timeout / Unavailable")
+            else:
+                ps = pagespeed_data.get("performance_score")
+                if isinstance(ps, int) and ps < 50:
+                    issues_for_ui.append(f"Low PageSpeed score ({ps}/100)")
+
+        issues_for_ui.extend(gemini_data.get("report_card", {}).get("issues_found", []) or [])
+
+        # De-duplicate while preserving order
+        deduped: List[str] = []
+        seen = set()
+        for issue in issues_for_ui:
+            if not issue or not isinstance(issue, str):
+                continue
+            if issue in seen:
+                continue
+            seen.add(issue)
+            deduped.append(issue)
+        issues_for_ui = deduped[:10]
         
         # Step 4: Save to database
         if self.supabase:
@@ -624,12 +691,161 @@ class DeepAnalyzer:
         
         print("\n✅ AI Analysis Complete!")
         print("="*60 + "\n")
+
+        api_analysis = dict(complete_analysis)
+        api_analysis["issues"] = issues_for_ui
+        return api_analysis
+    
+    def _fetch_website_for_security_check(self, url: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch website to perform security header audit
         
-        return complete_analysis
+        Args:
+            url: Website URL to check
+        
+        Returns:
+            Dict with security_score and security_issues, or None if failed
+        """
+        print(f"⏳ Fetching website for security audit: {url[:50]}...")
+        
+        try:
+            # Fetch the website with a reasonable timeout
+            response = requests.get(
+                url,
+                timeout=10,
+                allow_redirects=True,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (compatible; LeadScraperBot/1.0; +security-audit)'
+                }
+            )
+            
+            # Calculate security score based on headers
+            security_data = self._calculate_security_score(response)
+            
+            score = security_data['security_score']
+            issues_count = len(security_data['security_issues'])
+            print(f"✅ Security audit done: Score={score}/100, Issues={issues_count}")
+            
+            return security_data
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ Security check timeout after 10s")
+            logger.warning(f"Security check timeout for: {url}")
+            return {
+                "security_score": None,
+                "security_issues": ["Could not perform security audit - Website timeout"]
+            }
+        
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Security check failed: {str(e)[:80]}")
+            logger.warning(f"Security check failed for {url}: {str(e)}")
+            return {
+                "security_score": None,
+                "security_issues": [f"Could not perform security audit - {str(e)[:100]}"]
+            }
+    
+    def _calculate_security_score(self, response: requests.Response) -> Dict[str, Any]:
+        """
+        Professional Security Header Audit - calculates security score based on HTTP headers
+        
+        Args:
+            response: The requests.Response object from the website fetch
+        
+        Returns:
+            Dict with security_score (0-100) and list of security_issues
+        """
+        score = 100
+        issues = []
+        
+        # Get the URL to check protocol
+        url = response.url
+        
+        # Critical Check: Must be HTTPS
+        if not url.startswith('https://'):
+            logger.warning(f"Security check failed: Not HTTPS - {url}")
+            return {
+                "security_score": 0,
+                "security_issues": ["Critical: Website uses HTTP instead of HTTPS - All data is transmitted unencrypted"]
+            }
+        
+        # Get headers (case-insensitive access)
+        headers = {k.lower(): v for k, v in response.headers.items()}
+        
+        # Check 1: Strict-Transport-Security (HSTS)
+        if 'strict-transport-security' not in headers:
+            score -= 20
+            issues.append("Missing HSTS Header - Vulnerable to SSL Stripping Attacks")
+            logger.debug("Security issue: Missing HSTS")
+        
+        # Check 2: Clickjacking Protection (X-Frame-Options OR CSP with frame-ancestors)
+        has_frame_options = 'x-frame-options' in headers
+        csp = headers.get('content-security-policy', '')
+        has_csp_frame = 'frame-ancestors' in csp.lower()
+        
+        if not has_frame_options and not has_csp_frame:
+            score -= 20
+            issues.append("Missing Clickjacking Protection - No X-Frame-Options or CSP frame-ancestors")
+            logger.debug("Security issue: No clickjacking protection")
+        
+        # Check 3: X-Content-Type-Options (MIME Sniffing Protection)
+        if 'x-content-type-options' not in headers:
+            score -= 10
+            issues.append("Missing X-Content-Type-Options - Vulnerable to MIME Sniffing Attacks")
+            logger.debug("Security issue: Missing X-Content-Type-Options")
+        elif headers.get('x-content-type-options', '').lower() != 'nosniff':
+            score -= 5
+            issues.append("X-Content-Type-Options present but not set to 'nosniff'")
+        
+        # Check 4: Information Disclosure (X-Powered-By, Server headers with versions)
+        if 'x-powered-by' in headers:
+            score -= 10
+            powered_by = headers['x-powered-by']
+            issues.append(f"Information Disclosure: X-Powered-By header reveals '{powered_by}'")
+            logger.debug(f"Security issue: X-Powered-By header present: {powered_by}")
+        
+        if 'server' in headers:
+            server_value = headers['server']
+            # Check if server header contains version numbers (e.g., "nginx/1.18.0", "Apache/2.4.41")
+            if any(char.isdigit() for char in server_value):
+                score -= 10
+                issues.append(f"Information Disclosure: Server header reveals version '{server_value}'")
+                logger.debug(f"Security issue: Server header with version: {server_value}")
+        
+        # Check 5: Content-Security-Policy (bonus check - presence is good)
+        if 'content-security-policy' not in headers:
+            score -= 10
+            issues.append("Missing Content-Security-Policy - No protection against XSS and injection attacks")
+            logger.debug("Security issue: Missing CSP")
+        
+        # Check 6: Referrer-Policy (bonus check)
+        if 'referrer-policy' not in headers:
+            score -= 5
+            issues.append("Missing Referrer-Policy - May leak sensitive information in URLs")
+            logger.debug("Security issue: Missing Referrer-Policy")
+        
+        # Check 7: Permissions-Policy (bonus check for modern sites)
+        if 'permissions-policy' not in headers and 'feature-policy' not in headers:
+            score -= 5
+            issues.append("Missing Permissions-Policy - No control over browser features")
+            logger.debug("Security issue: Missing Permissions-Policy")
+        
+        # Ensure score never goes below 0
+        score = max(0, score)
+        
+        # If no issues, add positive message
+        if not issues:
+            issues.append("Excellent security configuration - All recommended headers present")
+        
+        logger.info(f"✅ Security audit complete: Score={score}/100, Issues={len(issues)}")
+        
+        return {
+            "security_score": score,
+            "security_issues": issues
+        }
     
     def _fetch_pagespeed_data(self, url: str) -> Optional[Dict[str, Any]]:
         """
-        Fetch performance metrics from Google PageSpeed Insights
+        Fetch performance metrics from Google PageSpeed Insights (Desktop only)
         
         Args:
             url: Website URL to analyze
@@ -642,25 +858,25 @@ class DeepAnalyzer:
             logger.warning("PageSpeed API key not available, skipping...")
             return None
         
-        print(f"⏳ Calling PageSpeed Insights for: {url[:50]}...")
+        print(f"⏳ Calling PageSpeed Insights (desktop) for: {url[:50]}...")
         
         try:
             params = {
                 "url": url,
                 "key": self.google_cloud_api_key,
-                "strategy": "mobile",  # mobile or desktop
-                "category": "performance"
+                "strategy": "desktop",  # Desktop-only for reliability
+                "category": "performance",
             }
             
             response = requests.get(
                 self.pagespeed_endpoint,
                 params=params,
-                timeout=45  # Increased to 45s to reduce timeouts
+                timeout=45  # Generous timeout for better success rate
             )
             
             if response.status_code != 200:
                 print(f"⚠️  PageSpeed returned status {response.status_code}")
-                logger.warning(f"PageSpeed API returned {response.status_code}")
+                logger.warning(f"PageSpeed API returned {response.status_code} for {url}")
                 return None
             
             data = response.json()
@@ -679,17 +895,18 @@ class DeepAnalyzer:
             loading_time = speed_index.get("displayValue", "N/A")
             
             print(f"✅ PageSpeed done: Score={performance_score}/100, Time={loading_time}")
-            logger.info(f"✅ PageSpeed score: {performance_score}/100, Loading: {loading_time}")
+            logger.info(f"✅ PageSpeed score (desktop): {performance_score}/100, Loading: {loading_time}")
             
             return {
                 "performance_score": performance_score,
                 "loading_time": loading_time,
+                "strategy": "desktop",
                 "lighthouse_data": lighthouse_result
             }
             
         except requests.exceptions.Timeout:
-            print(f"❌ PageSpeed Timeout after 45s")
-            logger.error(f"PageSpeed timeout for: {url}")
+            print(f"❌ PageSpeed timeout after 45s")
+            logger.warning(f"PageSpeed timeout for: {url} - site too slow, skipping")
             return None
             
         except Exception as e:
@@ -701,7 +918,8 @@ class DeepAnalyzer:
         self,
         url: Optional[str],
         map_data: Dict[str, Any],
-        pagespeed_data: Optional[Dict[str, Any]]
+        pagespeed_data: Optional[Dict[str, Any]],
+        security_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Analyze business with Gemini AI
@@ -710,6 +928,7 @@ class DeepAnalyzer:
             url: Website URL (can be None)
             map_data: Google Maps business data
             pagespeed_data: PageSpeed Insights data (can be None)
+            security_data: Security audit data (can be None)
         
         Returns:
             Gemini analysis with scores, report, and pitch
@@ -723,7 +942,7 @@ class DeepAnalyzer:
         
         try:
             # Construct prompt
-            prompt = self._build_gemini_prompt(url, map_data, pagespeed_data)
+            prompt = self._build_gemini_prompt(url, map_data, pagespeed_data, security_data)
             
             # Call Gemini with timeout handling
             model = genai.GenerativeModel(self.gemini_model)
@@ -775,7 +994,8 @@ class DeepAnalyzer:
         self,
         url: Optional[str],
         map_data: Dict[str, Any],
-        pagespeed_data: Optional[Dict[str, Any]]
+        pagespeed_data: Optional[Dict[str, Any]],
+        security_data: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Build the Gemini AI prompt
@@ -784,6 +1004,7 @@ class DeepAnalyzer:
             url: Website URL
             map_data: Google Maps data
             pagespeed_data: PageSpeed data
+            security_data: Security audit data
         
         Returns:
             Complete prompt string
@@ -803,42 +1024,54 @@ class DeepAnalyzer:
             loading = pagespeed_data.get("loading_time", "N/A")
             pagespeed_context = f"\nPageSpeed Score: {score}/100, Loading Time: {loading}"
         
+        # Build security context
+        security_context = ""
+        if security_data:
+            sec_score = security_data.get("security_score", "N/A")
+            sec_issues = security_data.get("security_issues", [])
+            security_context = f"\nSecurity Score: {sec_score}/100"
+            if sec_issues:
+                security_context += f"\nSecurity Issues: {', '.join(sec_issues[:3])}"
+        
         prompt = f"""Analysiere dieses Business und erstelle einen Lead-Report.
 
 Business: {business_name}
 Typ: {business_type}
 Adresse: {address}
 {website_context}
-Rating: {rating} ({reviews} Bewertungen){pagespeed_context}
-
-ANTWORT NUR MIT DIESEM JSON FORMAT (keine anderen Texte, keine Markdown):
-
-{{
-  "lead_quality": "High",
-  "tech_stack": ["WordPress"],
-  "scores": {{
-    "ui": 60,
-    "ux": 55,
-    "seo": 50,
-    "content": 65,
-    "total": 58
-  }},
-  "report_card": {{
-    "executive_summary": "Kurze Zusammenfassung max 100 Zeichen",
-    "issues_found": ["Issue 1", "Issue 2", "Issue 3"],
-    "recommendations": ["Empfehlung 1", "Empfehlung 2", "Empfehlung 3"]
-  }},
-  "email_pitch": {{
-    "subject": "Betreff max 50 Zeichen",
-    "body_text": "Email Text max 150 Zeichen"
-  }}
-}}
+Rating: {rating} ({reviews} Bewertungen){pagespeed_context}{security_context}
 
 WICHTIG:
-1. Antworte NUR mit dem JSON (keine anderen Texte)
-2. Keine Sonderzeichen in Strings (keine Umlaute, nur ae/oe/ue)
-3. Kurze Texte (siehe Limits oben)
-4. MUSS vollstaendiges JSON sein mit allen Feldern"""
+- Antworte NUR mit einem JSON-Objekt (keine Markdown-Codeblocks, kein Text davor/danach).
+- Alle scores muessen INTEGER sein (0-100).
+- Nutze die AUTOMATISCHEN SIGNale oben:
+  - Wenn PageSpeed Score fehlt/Timeout: erwaehne das als Issue.
+  - Wenn Security Issues existieren: uebernimm sie in issues_found (mind. 1-2 davon).
+- Bitte NICHT immer die gleichen Score-Zahlen verwenden; schaetze realistisch je Website/Quelle.
+
+JSON Format:
+
+{{
+  "lead_quality": "High|Medium|Low",
+  "tech_stack": ["..."],
+  "scores": {{
+    "ui": 0,
+    "ux": 0,
+    "seo": 0,
+    "content": 0,
+    "total": 0
+  }},
+  "report_card": {{
+    "executive_summary": "Kurze Zusammenfassung (<= 160 Zeichen)",
+    "issues_found": ["..."],
+    "recommendations": ["..."]
+  }},
+  "email_pitch": {{
+    "subject": "Betreff (<= 80 Zeichen)",
+    "body_text": "Email Text (<= 300 Zeichen)"
+  }}
+}}
+"""
         
         return prompt
     
@@ -985,6 +1218,7 @@ WICHTIG:
         url: Optional[str],
         map_data: Dict[str, Any],
         pagespeed_data: Optional[Dict[str, Any]],
+        security_data: Optional[Dict[str, Any]],
         gemini_data: Dict[str, Any],
         bulk_analysis_id: Optional[str],
         industry: Optional[str] = None
@@ -996,6 +1230,7 @@ WICHTIG:
             url: Website URL
             map_data: Google Maps data
             pagespeed_data: PageSpeed data
+            security_data: Security audit data
             gemini_data: Gemini analysis data
             bulk_analysis_id: Bulk analysis ID
         
@@ -1031,12 +1266,22 @@ WICHTIG:
         # Calculate Google Speed Score (use PageSpeed if available, otherwise estimate)
         google_speed_score = performance_score if performance_score is not None else max(0, total_score - 20)
         
+        # Extract Security score
+        security_score = security_data.get("security_score") if security_data else None
+        security_issues = security_data.get("security_issues", []) if security_data else []
+        
         # Extract tech stack
         tech_stack = gemini_data.get("tech_stack", ["Unknown"])
         
-        # Extract report card
+        # Extract report card and merge with security issues
         report_card = gemini_data.get("report_card", {})
         issues_found = report_card.get("issues_found", [])
+        
+        # Add security issues to the issues list (prioritize security issues)
+        if security_issues:
+            # Add top security issues to the beginning of the list
+            issues_found = security_issues[:2] + issues_found
+            logger.info(f"Merged {len(security_issues)} security issues into analysis report")
         
         # Determine lead strength
         lead_quality = gemini_data.get("lead_quality", "Medium")
@@ -1059,7 +1304,7 @@ WICHTIG:
             "seo_score": seo_score,
             "tech_score": ux_score,  # Map UX to tech_score
             "performance_score": performance_score,
-            "security_score": None,
+            "security_score": security_score,  # Calculated from Security Header Audit
             "mobile_score": None,
             "total_score": total_score,
             

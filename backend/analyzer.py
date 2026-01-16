@@ -8,6 +8,7 @@ import uuid
 import logging
 import json
 import re
+from urllib.parse import urlparse
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -462,6 +463,7 @@ class DeepAnalyzer:
         company_name = business.get("name", "Unknown Business")
         business_address = business.get("full_address", "")
         business_phone = business.get("phone_number")
+        business_email = business.get("email") or ""
         website = business.get("website", "")
         rating = business.get("rating")
         review_count = business.get("review_count", 0)
@@ -477,7 +479,7 @@ class DeepAnalyzer:
             "id": lead_id,
             "website": website or f"no-website-{place_id}",
             "company_name": company_name,
-            "email": "",  # Will be extracted later from website
+            "email": business_email,  # Best-effort from API (if provided)
             "business_phone": business_phone,
             "business_address": business_address,
             "industry": industry,
@@ -730,6 +732,11 @@ class DeepAnalyzer:
             
             # Calculate security score based on headers
             security_data = self._calculate_security_score(response)
+
+            # Best-effort email extraction from HTML
+            email = self._extract_email_from_html(response.text or "", url)
+            if email:
+                security_data["email"] = email
             
             score = security_data['security_score']
             issues_count = len(security_data['security_issues'])
@@ -851,6 +858,52 @@ class DeepAnalyzer:
             "security_score": score,
             "security_issues": issues
         }
+
+    def _extract_email_from_html(self, html: str, url: str) -> Optional[str]:
+        """
+        Extract a likely contact email from HTML (best-effort).
+        Prefers emails matching the website domain.
+        """
+        if not html:
+            return None
+
+        # Limit scanning to avoid very large pages
+        snippet = html[:200000]
+        candidates = re.findall(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", snippet, flags=re.IGNORECASE)
+        if not candidates:
+            return None
+
+        # Normalize and de-duplicate while preserving order
+        seen = set()
+        emails: List[str] = []
+        for email in candidates:
+            clean = email.strip().lower()
+            if clean in seen:
+                continue
+            seen.add(clean)
+            emails.append(clean)
+
+        if not emails:
+            return None
+
+        # Filter out obvious placeholders
+        blocked_domains = {"example.com", "email.com", "test.com"}
+        emails = [e for e in emails if e.split("@")[-1] not in blocked_domains]
+        if not emails:
+            return None
+
+        # Prefer emails matching the website domain
+        try:
+            domain = urlparse(url).netloc.lower().replace("www.", "")
+        except Exception:
+            domain = ""
+
+        if domain:
+            for email in emails:
+                if email.endswith(f"@{domain}"):
+                    return email
+
+        return emails[0]
     
     def _fetch_pagespeed_data(self, url: str) -> Optional[Dict[str, Any]]:
         """
@@ -1253,6 +1306,7 @@ JSON Format:
         company_name = map_data.get("name", "Unknown Business")
         business_address = map_data.get("full_address", "")
         business_phone = map_data.get("phone_number")
+        business_email = map_data.get("email") or ""
         rating = map_data.get("rating")
         review_count = map_data.get("review_count", 0)
         photo_count = map_data.get("photo_count", 0)
@@ -1302,7 +1356,7 @@ JSON Format:
             "id": analysis_id,
             "website": url or f"no-website-{place_id}",
             "company_name": company_name,
-            "email": "",  # To be extracted from website scraping
+            "email": (security_data or {}).get("email", "") or business_email,
             "business_phone": business_phone,
             "business_address": business_address,
             "industry": industry,

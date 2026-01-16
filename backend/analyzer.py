@@ -102,7 +102,8 @@ class DeepAnalyzer:
         location: str,
         target_results: int,
         filters: Dict[str, Any],
-        bulk_analysis_id: Optional[str] = None
+        bulk_analysis_id: Optional[str] = None,
+        stream_callback: Optional[callable] = None
     ) -> Dict[str, Any]:
         """
         Main Deep Search loop - finds leads matching filters using pagination
@@ -113,9 +114,10 @@ class DeepAnalyzer:
             target_results: Number of leads to find (1-1000)
             filters: Sniper Mode filters dictionary
             bulk_analysis_id: UUID of the bulk analysis job
+            stream_callback: Optional callback function for streaming results (called for each completed lead)
         
         Returns:
-            Dictionary with results and statistics
+            Dictionary with results and statistics (includes stream_events if callback provided)
         """
         print("\n" + "🚀 "*30)
         print(f"🚀 BULK SEARCH STARTED")
@@ -237,6 +239,13 @@ class DeepAnalyzer:
                         found_leads.append(result["data"])
                         print(f"   💾 Lead complete! {result['name'][:40]} ({len(found_leads)}/{target_results})")
                         logger.info(f"✅ Lead saved: {result['name']} ({len(found_leads)}/{target_results})")
+                        
+                        # Call streaming callback if provided (for real-time updates)
+                        if stream_callback:
+                            try:
+                                stream_callback(result["data"])
+                            except Exception as e:
+                                logger.error(f"Stream callback error: {str(e)}")
                     else:
                         print(f"   ❌ Analysis failed: {result['name'][:40]} - {result['error'][:80]}")
                     

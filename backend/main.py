@@ -11,8 +11,12 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import json
+import asyncio
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -319,6 +323,168 @@ async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTask
             leads=[],
             message=f"Search failed: {str(e)}"
         )
+
+
+@app.post("/api/v1/analyses/bulk-search-stream")
+async def bulk_search_stream(request: BulkScanRequest):
+    """
+    Bulk Google Maps Search with Server-Sent Events (SSE) streaming
+    
+    Streams results in real-time as each lead is analyzed.
+    """
+    analysis_id = str(uuid.uuid4())
+    
+    print("=" * 60)
+    print("STREAMING BULK SEARCH REQUEST")
+    print("=" * 60)
+    print(f"Analysis ID: {analysis_id}")
+    print(f"Industry: {request.industry}")
+    print(f"Location: {request.location}")
+    print(f"Target Results: {request.targetResults}")
+    print("=" * 60)
+    
+    # Create an async queue for real-time event streaming
+    event_queue: asyncio.Queue = asyncio.Queue()
+    
+    async def event_generator():
+        """Generate SSE events as leads complete"""
+        try:
+            # Send initial status
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Starting search...', 'analysisId': analysis_id})}\n\n"
+            await asyncio.sleep(0.1)  # Give client time to connect
+            
+            # Capture the running loop for thread-safe queue access
+            loop = asyncio.get_running_loop()
+
+            # Define callback for each completed lead
+            completed_count = [0]  # Use list to allow modification in nested function
+            
+            def on_lead_complete(lead_data: dict):
+                """Called when a single lead completes analysis"""
+                completed_count[0] += 1
+                
+                # Convert to frontend format
+                analysis_response = {
+                    "type": "lead",
+                    "data": {
+                        "id": lead_data["id"],
+                        "website": lead_data.get("website", ""),
+                        "companyName": lead_data.get("company_name", ""),
+                        "email": lead_data.get("email", ""),
+                        "phone": lead_data.get("business_phone"),
+                        "location": lead_data.get("business_address", ""),
+                        "industry": lead_data.get("industry"),
+                        "companySize": lead_data.get("company_size"),
+                        "uiScore": lead_data.get("ui_score", 0),
+                        "seoScore": lead_data.get("seo_score", 0),
+                        "techScore": lead_data.get("tech_score", 0),
+                        "performanceScore": lead_data.get("performance_score"),
+                        "securityScore": lead_data.get("security_score"),
+                        "mobileScore": lead_data.get("mobile_score"),
+                        "totalScore": lead_data.get("total_score", 0),
+                        "status": lead_data.get("status", "completed"),
+                        "lastChecked": lead_data.get("last_checked", datetime.utcnow().isoformat()),
+                        "issues": lead_data.get("issues", []),
+                        "source": lead_data.get("source", "Google Maps"),
+                        "techStack": lead_data.get("tech_stack", []),
+                        "hasAdsPixel": lead_data.get("has_ads_pixel", False),
+                        "googleSpeedScore": lead_data.get("google_speed_score", 0),
+                        "loadingTime": lead_data.get("loading_time", "0s"),
+                        "copyrightYear": lead_data.get("copyright_year", datetime.utcnow().year),
+                        "leadStrength": lead_data.get("lead_strength"),
+                        "googleMapsRating": lead_data.get("google_maps_rating"),
+                        "googleMapsReviews": lead_data.get("google_maps_reviews"),
+                        "googleMapsPriceLevel": lead_data.get("google_maps_price_level"),
+                        "googleMapsPhotoCount": lead_data.get("google_maps_photo_count"),
+                        "googleMapsPlaceId": lead_data.get("google_maps_place_id")
+                    },
+                    "progress": {
+                        "completed": completed_count[0],
+                        "target": request.targetResults
+                    }
+                }
+                
+                # Put event in queue for immediate streaming (thread-safe)
+                print(f"🟢 Queueing lead event: {completed_count[0]}/{request.targetResults}")
+                loop.call_soon_threadsafe(event_queue.put_nowait, ("lead", analysis_response))
+            
+            # Run analyzer in background thread
+            def run_analyzer():
+                try:
+                    analyzer = get_analyzer()
+                    filters_dict = request.filters.dict() if request.filters else {}
+                    
+                    result = analyzer.process_bulk_search(
+                        industry=request.industry,
+                        location=request.location,
+                        target_results=request.targetResults,
+                        filters=filters_dict,
+                        bulk_analysis_id=analysis_id,
+                        stream_callback=on_lead_complete
+                    )
+                    
+                    # Send completion event
+                    loop.call_soon_threadsafe(event_queue.put_nowait, ("complete", {
+                        "type": "complete",
+                        "analysisId": analysis_id,
+                        "totalFound": result.get("total_found", 0),
+                        "totalScanned": result.get("total_scanned", 0),
+                        "message": f"Search complete! Found {result.get('total_found', 0)} leads"
+                    }))
+                except Exception as e:
+                    print(f"Analyzer error: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    loop.call_soon_threadsafe(event_queue.put_nowait, ("error", {
+                        "type": "error",
+                        "message": f"Search failed: {str(e)}"
+                    }))
+            
+            # Start analyzer in background thread
+            analyzer_thread = threading.Thread(target=run_analyzer, daemon=True)
+            analyzer_thread.start()
+            
+            # Stream events from queue as they arrive
+            while True:
+                try:
+                    # Wait for next event (with keep-alive)
+                    event_type, event_data = await asyncio.wait_for(event_queue.get(), timeout=10.0)
+                    
+                    # Log the event
+                    print(f"📤 Streaming event: {event_type}")
+                    
+                    # Yield the event immediately
+                    yield f"data: {json.dumps(event_data)}\n\n"
+                    await asyncio.sleep(0)  # Allow flush to client
+                    
+                    # If complete or error, stop streaming
+                    if event_type in ("complete", "error"):
+                        break
+                except asyncio.TimeoutError:
+                    # Keep-alive to prevent buffering/timeouts
+                    yield ": keep-alive\n\n"
+                    await asyncio.sleep(0)
+                    
+        except Exception as e:
+            print(f"Streaming error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            error_event = {
+                "type": "error",
+                "message": f"Stream error: {str(e)}"
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "Connection": "keep-alive",
+        }
+    )
 
 
 @app.get("/api/v1/analyses")

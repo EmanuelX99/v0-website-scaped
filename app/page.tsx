@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { flushSync } from "react-dom"
 import { Header } from "@/components/header"
 import { AnalysisForm } from "@/components/analysis-form"
 import { AnalysisTable } from "@/components/analysis-table"
@@ -53,6 +54,7 @@ export default function Dashboard() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [isNewAnalysisModalOpen, setIsNewAnalysisModalOpen] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null)
 
   useEffect(() => {
     const savedAnalyses = localStorage.getItem("sitescanner-analyses")
@@ -185,7 +187,7 @@ export default function Dashboard() {
     }
   ) => {
     try {
-      console.log("Starting bulk search...", { industry, location, targetResults, filters })
+      console.log("Starting streaming bulk search...", { industry, location, targetResults, filters })
 
       // Prepare request body matching BulkScanRequest schema
       const requestBody = {
@@ -204,82 +206,152 @@ export default function Dashboard() {
 
       console.log("Request body:", JSON.stringify(requestBody, null, 2))
 
-      // Call backend API
-      const response = await fetch("http://127.0.0.1:8000/api/v1/analyses/bulk-search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
+      // Initialize progress
+      setScanProgress({ current: 0, total: targetResults })
+
+      // Use EventSource for streaming results
+      const url = new URL("http://127.0.0.1:8000/api/v1/analyses/bulk-search-stream")
+      
+      // Create a promise to handle the streaming
+      return new Promise<boolean>((resolve, reject) => {
+        // Use fetch for POST with SSE
+        fetch(url.toString(), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`API error: ${response.status} ${response.statusText}`)
+            }
+
+            const reader = response.body?.getReader()
+            const decoder = new TextDecoder()
+
+            if (!reader) {
+              throw new Error("No response body")
+            }
+
+            let completedCount = 0
+
+            // Read the stream
+            while (true) {
+              const { done, value } = await reader.read()
+
+              if (done) {
+                console.log("Stream complete!")
+                resolve(true)
+                break
+              }
+
+              // Decode the chunk
+              const chunk = decoder.decode(value, { stream: true })
+              const lines = chunk.split("\n")
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  try {
+                    const data = JSON.parse(line.slice(6))
+                    console.log("🔴 SSE event received:", data.type, data.progress || "")
+
+                    if (data.type === "status") {
+                      console.log("🔵 Status:", data.message)
+                    } else if (data.type === "lead") {
+                      // Convert backend response to frontend Analysis format
+                      const lead = data.data
+                      const newAnalysis: Analysis = {
+                        id: lead.id,
+                        website: lead.website,
+                        companyName: lead.companyName,
+                        email: lead.email,
+                        phone: lead.phone,
+                        location: lead.location,
+                        industry: lead.industry,
+                        companySize: lead.companySize,
+                        uiScore: lead.uiScore,
+                        seoScore: lead.seoScore,
+                        techScore: lead.techScore,
+                        performanceScore: lead.performanceScore,
+                        securityScore: lead.securityScore,
+                        mobileScore: lead.mobileScore,
+                        totalScore: lead.totalScore,
+                        status: lead.status,
+                        lastChecked: lead.lastChecked,
+                        issues: lead.issues,
+                        source: lead.source,
+                        techStack: lead.techStack,
+                        hasAdsPixel: lead.hasAdsPixel,
+                        googleSpeedScore: lead.googleSpeedScore,
+                        loadingTime: lead.loadingTime,
+                        copyrightYear: lead.copyrightYear,
+                      }
+
+                      // Add to analyses in real-time (force immediate render)
+                      flushSync(() => {
+                        setAnalyses((prev) => [newAnalysis, ...prev])
+                      })
+
+                      // Add to leads if low score
+                      if (newAnalysis.totalScore < 60) {
+                        const newLead: Lead = {
+                          id: newAnalysis.id,
+                          website: newAnalysis.website,
+                          totalScore: newAnalysis.totalScore,
+                          mainIssue: newAnalysis.issues[0] || "Needs improvement",
+                          industry: newAnalysis.industry || "Unknown",
+                          source: newAnalysis.source || "Google Maps",
+                          leadStrength: (newAnalysis.totalScore < 40
+                            ? "strong"
+                            : newAnalysis.totalScore < 50
+                              ? "medium"
+                              : "weak") as "weak" | "medium" | "strong",
+                        }
+                        setLeads((prev) => [newLead, ...prev])
+                      }
+
+                      completedCount++
+                      
+                      // Update progress (force immediate render with flushSync)
+                      const newProgress = { current: completedCount, total: data.progress.target }
+                      console.log("🟢 Updating progress:", newProgress)
+                      flushSync(() => {
+                        setScanProgress(newProgress)
+                      })
+                      
+                      console.log(
+                        `✅ Lead ${completedCount}/${data.progress.target} added: ${newAnalysis.companyName || newAnalysis.website}`,
+                      )
+                      
+                      // Small delay to ensure UI updates are visible
+                      await new Promise(resolve => setTimeout(resolve, 50))
+                    } else if (data.type === "complete") {
+                      console.log(`🟢 Search complete! Total found: ${data.totalFound}`)
+                      console.log("🔴 Clearing progress")
+                      setScanProgress(null) // Clear progress
+                      resolve(true)
+                      break
+                    } else if (data.type === "error") {
+                      throw new Error(data.message)
+                    }
+                  } catch (e) {
+                    console.error("Failed to parse SSE data:", e)
+                  }
+                }
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Streaming error:", error)
+            setScanProgress(null) // Clear progress on error
+            alert(`Search failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+            reject(error)
+          })
       })
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      console.log("API response:", data)
-
-      // Check if search was successful
-      if (data.status === "failed") {
-        throw new Error(data.message || "Search failed")
-      }
-
-      // Convert backend response to frontend Analysis format
-      const newAnalyses: Analysis[] = data.leads.map((lead: any) => ({
-        id: lead.id,
-        website: lead.website,
-        companyName: lead.companyName,
-        email: lead.email,
-        phone: lead.phone,
-        location: lead.location,
-        industry: lead.industry,
-        companySize: lead.companySize,
-        uiScore: lead.uiScore,
-        seoScore: lead.seoScore,
-        techScore: lead.techScore,
-        performanceScore: lead.performanceScore,
-        securityScore: lead.securityScore,
-        mobileScore: lead.mobileScore,
-        totalScore: lead.totalScore,
-        status: lead.status,
-        lastChecked: lead.lastChecked,
-        issues: lead.issues,
-        source: lead.source,
-        techStack: lead.techStack,
-        hasAdsPixel: lead.hasAdsPixel,
-        googleSpeedScore: lead.googleSpeedScore,
-        loadingTime: lead.loadingTime,
-        copyrightYear: lead.copyrightYear,
-      }))
-
-      // Add new analyses to the top of the list
-      setAnalyses([...newAnalyses, ...analyses])
-
-      // Also update leads table if score is low
-      const newLeads: Lead[] = newAnalyses
-        .filter((a) => a.totalScore < 60)
-        .map((a) => ({
-          id: a.id,
-          website: a.website,
-          totalScore: a.totalScore,
-          mainIssue: a.issues[0] || "Needs improvement",
-          industry: a.industry || "Unknown",
-          source: a.source || "Google Maps",
-          leadStrength: (a.totalScore < 40 ? "strong" : a.totalScore < 50 ? "medium" : "weak") as
-            | "weak"
-            | "medium"
-            | "strong",
-        }))
-
-      if (newLeads.length > 0) {
-        setLeads([...newLeads, ...leads])
-      }
-
-      console.log(`Successfully added ${newAnalyses.length} analyses`)
-      return true
     } catch (error) {
       console.error("Bulk search error:", error)
+      setScanProgress(null) // Clear progress on error
       alert(`Search failed: ${error instanceof Error ? error.message : "Unknown error"}`)
       return false
     }
@@ -302,7 +374,7 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <div className="space-y-8">
-            <AnalysisForm onAnalyze={handleAnalyze} onBulkSearch={handleBulkSearch} />
+            <AnalysisForm onAnalyze={handleAnalyze} onBulkSearch={handleBulkSearch} scanProgress={scanProgress} />
             <AnalysisTable analyses={analyses} setAnalyses={setAnalyses} />
             <div className="space-y-4">
               <div>

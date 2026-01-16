@@ -28,9 +28,10 @@ interface AnalysisFormProps {
       websiteStatus: string
     }
   ) => Promise<boolean>
+  scanProgress?: { current: number; total: number } | null
 }
 
-export function AnalysisForm({ onAnalyze, onBulkSearch }: AnalysisFormProps) {
+export function AnalysisForm({ onAnalyze, onBulkSearch, scanProgress }: AnalysisFormProps) {
   const [url, setUrl] = useState("")
   const [sourceMode, setSourceMode] = useState<"manual" | "google-maps">("manual")
   const [isScanning, setIsScanning] = useState(false)
@@ -343,7 +344,7 @@ export function AnalysisForm({ onAnalyze, onBulkSearch }: AnalysisFormProps) {
               {isScanning ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Searching Google Maps...
+                  {scanProgress ? `Analyzing... ${scanProgress.current}/${scanProgress.total}` : "Searching Google Maps..."}
                 </>
               ) : (
                 <>
@@ -352,8 +353,26 @@ export function AnalysisForm({ onAnalyze, onBulkSearch }: AnalysisFormProps) {
                 </>
               )}
             </Button>
+            {scanProgress && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Progress</span>
+                  <span>
+                    {scanProgress.current} / {scanProgress.total} leads
+                  </span>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2.5">
+                  <div
+                    className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${(scanProgress.current / scanProgress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
             <p className="text-center text-xs text-muted-foreground">
-              Durchsucht Google Maps nach Unternehmen mit Verbesserungspotenzial
+              {scanProgress
+                ? "Results appearing in real-time below ↓"
+                : "Durchsucht Google Maps nach Unternehmen mit Verbesserungspotenzial"}
             </p>
           </div>
         )}

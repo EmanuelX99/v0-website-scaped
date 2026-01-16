@@ -91,8 +91,9 @@ class DeepAnalyzer:
             logger.warning("Continuing without database - leads will not be saved!")
             self.supabase = None  # Set to None to handle gracefully
         
-        # Safety limits
-        self.max_scan_limit = int(os.getenv("MAX_SCAN_LIMIT", 1000))
+        # Safety limits (cost controls)
+        self.max_scan_limit = int(os.getenv("MAX_SCAN_LIMIT", 200))
+        self.max_pages = int(os.getenv("MAX_PAGES", 5))
         self.rapidapi_timeout = int(os.getenv("RAPIDAPI_TIMEOUT", 30))
         
         logger.info("DeepAnalyzer initialized successfully")
@@ -134,6 +135,7 @@ class DeepAnalyzer:
         scanned_count = 0
         page_count = 0
         next_page_token = None
+        stop_reason = None
         
         # Build search query
         query = f"{industry} {location}"
@@ -141,6 +143,11 @@ class DeepAnalyzer:
         
         # Pagination loop
         while len(found_leads) < target_results and scanned_count < self.max_scan_limit:
+            if page_count >= self.max_pages:
+                stop_reason = f"max_pages_reached ({self.max_pages})"
+                logger.warning(f"Stopping early: reached max pages ({self.max_pages})")
+                break
+
             page_count += 1
             print(f"\n📄 Page {page_count} | Progress: {len(found_leads)}/{target_results} leads found")
             logger.info(f"Fetching page {page_count} (found: {len(found_leads)}/{target_results})")
@@ -161,6 +168,7 @@ class DeepAnalyzer:
             
             # Check if we got results
             if not businesses:
+                stop_reason = "no_more_results"
                 print("⚠️  No more results from API")
                 logger.warning("No more results from API")
                 break
@@ -256,20 +264,34 @@ class DeepAnalyzer:
             
             # Check termination conditions
             if not next_page_token:
+                stop_reason = stop_reason or "no_more_pages"
                 logger.info("No more pages available")
                 break
             
             if scanned_count >= self.max_scan_limit:
+                stop_reason = f"max_scanned_reached ({self.max_scan_limit})"
                 logger.warning(f"Reached max scan limit: {self.max_scan_limit}")
                 break
         
         # Final statistics
+        status = "completed" if len(found_leads) >= target_results else "partial"
+        if status == "completed":
+            message = f"Found {len(found_leads)}/{target_results} leads"
+        else:
+            reason = stop_reason or "insufficient_results"
+            message = (
+                f"Partial results: found {len(found_leads)}/{target_results} leads; "
+                f"stopped early to protect cost ({reason})"
+            )
+
         result = {
             "total_found": len(found_leads),
             "total_scanned": scanned_count,
             "pages_fetched": page_count,
             "leads": found_leads,
-            "status": "completed" if len(found_leads) >= target_results else "partial"
+            "status": status,
+            "message": message,
+            "stop_reason": stop_reason
         }
         
         # Print final summary
@@ -372,9 +394,44 @@ class DeepAnalyzer:
         review_count = business.get("review_count", 0)
         phone = business.get("phone_number")  # Local Business Data uses 'phone_number'
         website = business.get("website")
-        # Use photo_count field directly
-        photo_count = business.get("photo_count", 0)
         business_status = business.get("business_status")
+
+        def normalize_price_level(value: Any) -> Optional[str]:
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                return str(int(value))
+            text = str(value).strip()
+            if not text:
+                return None
+            if text.startswith("$"):
+                return str(len(text))
+            match = re.search(r"\d+", text)
+            return match.group(0) if match else None
+
+        def extract_photo_count(value: Any) -> int:
+            if isinstance(value, (int, float)):
+                return int(value)
+            if value is None:
+                photos = business.get("photos")
+                if isinstance(photos, list):
+                    return len(photos)
+                return 0
+            text = str(value)
+            match = re.search(r"\d+", text)
+            return int(match.group(0)) if match else 0
+
+        business_price = normalize_price_level(business.get("price_level"))
+        photo_count = extract_photo_count(business.get("photo_count"))
+
+        logger.debug(
+            "Filter data for %s: price_level_raw=%s normalized=%s photo_count_raw=%s extracted=%s",
+            business_name,
+            business.get("price_level"),
+            business_price,
+            business.get("photo_count"),
+            photo_count,
+        )
         # Business status: "OPEN", "CLOSED", etc.
         is_operational = business_status == "OPEN" if business_status else True
         
@@ -399,7 +456,6 @@ class DeepAnalyzer:
         # Filter 3: Price Level
         price_level = filters.get("priceLevel", [])
         if price_level and len(price_level) > 0 and "any" not in price_level:
-            business_price = str(business.get("price_level", ""))
             if business_price and business_price not in price_level:
                 logger.debug(f"Filtered out: Price level {business_price} not in {price_level}")
                 return False

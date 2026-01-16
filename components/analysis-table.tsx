@@ -22,6 +22,7 @@ import {
   Upload,
   Users,
   Phone,
+  ExternalLink,
 } from "lucide-react"
 import { useState, useRef } from "react" // Added useRef for file input
 import { ReportModal } from "@/components/report-modal"
@@ -248,6 +249,9 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
                   Company
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Website
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Contact
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -323,6 +327,28 @@ export function AnalysisTable({ analyses, setAnalyses }: AnalysisTableProps) {
                             </Badge>
                           </div>
                         </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <div className="flex items-center">
+                        {analysis.website ? (
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 hover:border-primary/60"
+                          >
+                            <a href={analysis.website} target="_blank" rel="noopener noreferrer">
+                              Website
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" disabled className="opacity-60">
+                            No Website
+                          </Button>
+                        )}
                       </div>
                     </td>
 

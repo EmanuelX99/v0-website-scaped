@@ -328,6 +328,9 @@ export default function Dashboard() {
                       await new Promise(resolve => setTimeout(resolve, 50))
                     } else if (data.type === "complete") {
                       console.log(`🟢 Search complete! Total found: ${data.totalFound}`)
+                      if (data.status === "partial" && data.message) {
+                        alert(data.message)
+                      }
                       console.log("🔴 Clearing progress")
                       setScanProgress(null) // Clear progress
                       resolve(true)

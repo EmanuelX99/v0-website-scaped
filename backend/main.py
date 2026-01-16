@@ -41,9 +41,9 @@ class MaxRatingEnum(str, Enum):
 class MaxPhotosEnum(str, Enum):
     """Maximum photo count threshold options"""
     ANY = "any"
-    LESS_THAN_5 = "5"
-    LESS_THAN_10 = "10"
-    LESS_THAN_20 = "20"
+    LESS_THAN_50 = "50"
+    LESS_THAN_100 = "100"
+    LESS_THAN_200 = "200"
 
 
 class WebsiteStatusEnum(str, Enum):
@@ -306,7 +306,7 @@ async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTask
             totalFound=result.get("total_found", 0),
             totalScanned=result.get("total_scanned", 0),
             leads=leads,
-            message=f"Found {result.get('total_found', 0)} leads matching criteria"
+            message=result.get("message", f"Found {result.get('total_found', 0)} leads matching criteria")
         )
         
     except Exception as e:
@@ -429,7 +429,8 @@ async def bulk_search_stream(request: BulkScanRequest):
                         "analysisId": analysis_id,
                         "totalFound": result.get("total_found", 0),
                         "totalScanned": result.get("total_scanned", 0),
-                        "message": f"Search complete! Found {result.get('total_found', 0)} leads"
+                        "status": result.get("status", "completed"),
+                        "message": result.get("message", f"Found {result.get('total_found', 0)} leads")
                     }))
                 except Exception as e:
                     print(f"Analyzer error: {str(e)}")

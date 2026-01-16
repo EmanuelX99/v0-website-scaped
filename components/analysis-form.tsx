@@ -275,9 +275,9 @@ export function AnalysisForm({ onAnalyze, onBulkSearch, scanProgress }: Analysis
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="any">Any</SelectItem>
-                              <SelectItem value="5">&lt; 5 Fotos</SelectItem>
-                              <SelectItem value="10">&lt; 10 Fotos</SelectItem>
-                              <SelectItem value="20">&lt; 20 Fotos</SelectItem>
+                              <SelectItem value="50">&lt; 50 Fotos</SelectItem>
+                              <SelectItem value="100">&lt; 100 Fotos</SelectItem>
+                              <SelectItem value="200">&lt; 200 Fotos</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

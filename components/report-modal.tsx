@@ -79,22 +79,24 @@ export function ReportModal({ analysis, lead, isOpen, onClose }: ReportModalProp
 
   if (!analysis && !lead) return null
 
+  // Use real scores from analysis or lead, with safe fallbacks
+  // NEVER use random values - these are real AI-analyzed scores!
   const data = analysis || {
     website: lead?.website || "",
-    uiScore: Math.floor(Math.random() * 40) + 30,
-    seoScore: Math.floor(Math.random() * 40) + 30,
-    techScore: Math.floor(Math.random() * 40) + 30,
-    performanceScore: Math.floor(Math.random() * 40) + 30,
-    securityScore: Math.floor(Math.random() * 40) + 40,
-    mobileScore: Math.floor(Math.random() * 40) + 30,
-    totalScore: lead?.totalScore || 50,
-    issues: [lead?.mainIssue || "Various issues detected", "Needs improvement"],
+    uiScore: lead?.uiScore || 0,
+    seoScore: lead?.seoScore || 0,
+    techScore: lead?.techScore || 0,
+    performanceScore: lead?.performanceScore || 0,
+    securityScore: lead?.securityScore || 0,
+    mobileScore: lead?.mobileScore || 0,
+    totalScore: lead?.totalScore || 0,
+    issues: lead?.issues || [lead?.mainIssue || "Analysis pending"],
   }
 
   const scores = [
-    { label: "UI/Design", value: data.uiScore },
-    { label: "SEO", value: data.seoScore },
-    { label: "Technical", value: data.techScore },
+    { label: "UI/Design", value: data.uiScore || 0 },
+    { label: "SEO", value: data.seoScore || 0 },
+    { label: "Technical", value: data.techScore || 0 },
     { label: "Performance", value: data.performanceScore || 0 },
     { label: "Security", value: data.securityScore || 0 },
     { label: "Mobile-Friendly", value: data.mobileScore || 0 },

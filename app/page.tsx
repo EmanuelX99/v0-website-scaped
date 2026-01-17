@@ -9,7 +9,9 @@ import { AnalysisDetails } from "@/components/analysis-details"
 import { PotentialLeadsTable } from "@/components/potential-leads-table"
 import { NewAnalysisModal } from "@/components/new-analysis-modal"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, LogOut } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
 export interface Analysis {
   id: string
@@ -55,6 +57,18 @@ export default function Dashboard() {
   const [isNewAnalysisModalOpen, setIsNewAnalysisModalOpen] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      router.push('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  }
 
   useEffect(() => {
     const savedAnalyses = localStorage.getItem("sitescanner-analyses")
@@ -206,6 +220,14 @@ export default function Dashboard() {
 
       console.log("Request body:", JSON.stringify(requestBody, null, 2))
 
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert("Not authenticated. Please log in.")
+        return false
+      }
+
       // Initialize progress
       setScanProgress({ current: 0, total: targetResults })
 
@@ -219,6 +241,7 @@ export default function Dashboard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,  // Add auth token
           },
           body: JSON.stringify(requestBody),
         })
@@ -365,11 +388,17 @@ export default function Dashboard() {
       <Header />
       <div className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between">
             <Button onClick={() => setIsNewAnalysisModalOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               New Analysis
             </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>

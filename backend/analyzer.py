@@ -105,7 +105,8 @@ class DeepAnalyzer:
         target_results: int,
         filters: Dict[str, Any],
         bulk_analysis_id: Optional[str] = None,
-        stream_callback: Optional[callable] = None
+        stream_callback: Optional[callable] = None,
+        user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Main Deep Search loop - finds leads matching filters using pagination
@@ -219,7 +220,8 @@ class DeepAnalyzer:
                             url=website,
                             map_data=business,
                             bulk_analysis_id=None,
-                            industry=industry
+                            industry=industry,
+                            user_id=user_id
                         )
                     else:
                         # No website - save basic data without AI analysis
@@ -227,7 +229,8 @@ class DeepAnalyzer:
                         lead_data = self._save_lead_to_database(
                             business=business,
                             industry=industry,
-                            bulk_analysis_id=None
+                            bulk_analysis_id=None,
+                            user_id=user_id
                         )
                     
                     return {"success": True, "data": lead_data, "name": business_name}
@@ -499,16 +502,18 @@ class DeepAnalyzer:
         self,
         business: Dict,
         industry: str,
-        bulk_analysis_id: Optional[str] = None
+        bulk_analysis_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Save a valid lead to Supabase database
-        
+
         Args:
             business: Business data from Google Maps
             industry: Industry category
             bulk_analysis_id: UUID of the bulk analysis job
-        
+            user_id: Authenticated user ID (for RLS)
+
         Returns:
             Saved lead data with ID
         """
@@ -656,7 +661,8 @@ class DeepAnalyzer:
         url: Optional[str],
         map_data: Dict[str, Any],
         bulk_analysis_id: Optional[str] = None,
-        industry: Optional[str] = None
+        industry: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Complete AI analysis combining PageSpeed Insights and Gemini AI
@@ -710,7 +716,8 @@ class DeepAnalyzer:
             security_data=security_data,
             gemini_data=gemini_data,
             bulk_analysis_id=bulk_analysis_id,
-            industry=industry
+            industry=industry,
+            user_id=user_id
         )
 
         # Build API-friendly issues list (not persisted to Supabase)
@@ -1394,11 +1401,12 @@ JSON Format:
         security_data: Optional[Dict[str, Any]],
         gemini_data: Dict[str, Any],
         bulk_analysis_id: Optional[str],
-        industry: Optional[str] = None
+        industry: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Merge all analysis data into final format
-        
+
         Args:
             url: Website URL
             map_data: Google Maps data
@@ -1473,7 +1481,8 @@ JSON Format:
             "business_address": business_address,
             "industry": industry,
             "company_size": None,
-            
+            "user_id": user_id,  # Add authenticated user_id for RLS
+
             # Scores
             "ui_score": ui_score,
             "seo_score": seo_score,
@@ -1482,12 +1491,12 @@ JSON Format:
             "security_score": security_score,  # Calculated from Security Header Audit
             "mobile_score": mobile_score,  # Calculated from viewport meta tag check
             "total_score": total_score,
-            
+
             # Status
             "status": "completed",
             "last_checked": datetime.utcnow().isoformat(),
             "source": "Google Maps",
-            
+
             # Technical details
             "tech_stack": tech_stack,
             "has_ads_pixel": False,  # To be detected in website scraping

@@ -24,6 +24,8 @@ load_dotenv()
 # Import analyzer
 from analyzer import get_analyzer
 from pdf_generator import PDFReportGenerator
+from auth import get_current_user, get_user_id
+from fastapi import Depends
 import io
 
 # ============================================
@@ -220,13 +222,21 @@ async def root():
 
 
 @app.post("/api/v1/analyses/bulk-search", response_model=BulkScanResponse)
-async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTasks):
+async def bulk_search(
+    request: BulkScanRequest, 
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Bulk Google Maps Search endpoint
+    Bulk Google Maps Search endpoint (PROTECTED)
     
     Searches Google Maps for businesses matching the specified criteria
     and applies Sniper Mode filters to find high-value leads.
+    
+    Requires: Valid JWT token in Authorization header
     """
+    user_id = current_user["user_id"]
+    
     # Generate analysis ID
     analysis_id = str(uuid.uuid4())
     
@@ -234,6 +244,7 @@ async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTask
     print("=" * 60)
     print("BULK SEARCH REQUEST RECEIVED")
     print("=" * 60)
+    print(f"User ID: {user_id}")  # Log authenticated user
     print(f"Analysis ID: {analysis_id}")
     print(f"Industry: {request.industry}")
     print(f"Location: {request.location}")
@@ -260,7 +271,8 @@ async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTask
             location=request.location,
             target_results=request.targetResults,
             filters=filters_dict,
-            bulk_analysis_id=analysis_id
+            bulk_analysis_id=analysis_id,
+            user_id=user_id  # Pass authenticated user_id
         )
         
         # Convert leads to AnalysisResponse format
@@ -328,17 +340,24 @@ async def bulk_search(request: BulkScanRequest, background_tasks: BackgroundTask
 
 
 @app.post("/api/v1/analyses/bulk-search-stream")
-async def bulk_search_stream(request: BulkScanRequest):
+async def bulk_search_stream(
+    request: BulkScanRequest,
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Bulk Google Maps Search with Server-Sent Events (SSE) streaming
+    Bulk Google Maps Search with Server-Sent Events (SSE) streaming (PROTECTED)
     
     Streams results in real-time as each lead is analyzed.
+    
+    Requires: Valid JWT token in Authorization header
     """
+    user_id = current_user["user_id"]
     analysis_id = str(uuid.uuid4())
     
     print("=" * 60)
     print("STREAMING BULK SEARCH REQUEST")
     print("=" * 60)
+    print(f"User ID: {user_id}")
     print(f"Analysis ID: {analysis_id}")
     print(f"Industry: {request.industry}")
     print(f"Location: {request.location}")
@@ -422,6 +441,7 @@ async def bulk_search_stream(request: BulkScanRequest):
                         target_results=request.targetResults,
                         filters=filters_dict,
                         bulk_analysis_id=analysis_id,
+                        user_id=user_id,  # Pass authenticated user_id
                         stream_callback=on_lead_complete
                     )
                     
@@ -501,14 +521,18 @@ async def list_analyses(
     leadStrength: Optional[str] = Query(
         default=None,
         description="Filter by lead strength: 'weak' | 'medium' | 'strong'"
-    )
+    ),
+    current_user: dict = Depends(get_current_user)
 ):
     """
-    List all analyses
+    List all analyses for the authenticated user (PROTECTED)
     
     Returns a paginated list of analysis results with optional filtering.
+    
+    Requires: Valid JWT token in Authorization header
     """
-    # TODO: Implement database query
+    user_id = current_user["user_id"]
+    # TODO: Implement database query filtered by user_id
     # For now, return empty list
     return {
         "analyses": [],
@@ -519,13 +543,19 @@ async def list_analyses(
 
 
 @app.get("/api/v1/analyses/{analysis_id}")
-async def get_analysis_status(analysis_id: str):
+async def get_analysis_status(
+    analysis_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Get analysis status by ID
+    Get analysis status by ID (PROTECTED)
     
     Returns the current status and progress of a bulk analysis job.
+    
+    Requires: Valid JWT token in Authorization header
     """
-    # TODO: Implement database query
+    user_id = current_user["user_id"]
+    # TODO: Implement database query with user_id filter
     # For now, return dummy response
     return {
         "id": analysis_id,
@@ -542,16 +572,22 @@ async def get_analysis_status(analysis_id: str):
 
 
 @app.get("/api/v1/analyses/{analysis_id}/pdf")
-async def download_pdf_report(analysis_id: str):
+async def download_pdf_report(
+    analysis_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Generate and download PDF report for an analysis
+    Generate and download PDF report for an analysis (PROTECTED)
     
     Args:
         analysis_id: The analysis ID from database
         
     Returns:
         PDF file as download
+        
+    Requires: Valid JWT token in Authorization header
     """
+    user_id = current_user["user_id"]
     try:
         # Get analyzer instance (to access supabase)
         analyzer = get_analyzer()

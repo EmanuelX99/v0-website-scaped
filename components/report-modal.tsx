@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Download, AlertCircle } from "lucide-react"
 import type { Analysis, Lead } from "@/app/page"
+import { createClient } from "@/lib/supabase/client"
 
 interface ReportModalProps {
   analysis?: Analysis | null
@@ -14,6 +15,8 @@ interface ReportModalProps {
 }
 
 export function ReportModal({ analysis, lead, isOpen, onClose }: ReportModalProps) {
+  const supabase = createClient()
+  
   const handleDownloadPDF = async () => {
     try {
       // Get analysis ID from either analysis or lead
@@ -24,8 +27,20 @@ export function ReportModal({ analysis, lead, isOpen, onClose }: ReportModalProp
         return
       }
 
-      // Fetch PDF from backend
-      const response = await fetch(`http://localhost:8000/api/v1/analyses/${analysisId}/pdf`)
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert("Not authenticated. Please log in.")
+        return
+      }
+
+      // Fetch PDF from backend with auth token
+      const response = await fetch(`http://localhost:8000/api/v1/analyses/${analysisId}/pdf`, {
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`
+        }
+      })
       
       if (!response.ok) {
         throw new Error(`PDF generation failed: ${response.statusText}`)

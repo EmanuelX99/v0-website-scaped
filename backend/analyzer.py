@@ -281,7 +281,7 @@ class DeepAnalyzer:
                         break
             
             # Check termination conditions
-            if not next_page_token:
+            if next_offset is None:
                 stop_reason = stop_reason or "no_more_pages"
                 logger.info("No more pages available")
                 break

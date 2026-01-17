@@ -14,9 +14,45 @@ interface ReportModalProps {
 }
 
 export function ReportModal({ analysis, lead, isOpen, onClose }: ReportModalProps) {
-  const handleDownloadPDF = () => {
-    // Stub functionality
-    alert("PDF download functionality would be implemented here")
+  const handleDownloadPDF = async () => {
+    try {
+      // Get analysis ID from either analysis or lead
+      const analysisId = analysis?.id || lead?.id
+      
+      if (!analysisId) {
+        alert("No analysis ID available for PDF generation")
+        return
+      }
+
+      // Fetch PDF from backend
+      const response = await fetch(`http://localhost:8000/api/v1/analyses/${analysisId}/pdf`)
+      
+      if (!response.ok) {
+        throw new Error(`PDF generation failed: ${response.statusText}`)
+      }
+
+      // Download PDF
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      
+      // Generate filename
+      const companyName = (analysis?.companyName || lead?.company || 'Report').replace(/\s+/g, '_')
+      a.download = `Website_Report_${companyName}_${analysisId.substring(0, 8)}.pdf`
+      
+      document.body.appendChild(a)
+      a.click()
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      console.log('✅ PDF downloaded successfully')
+    } catch (error) {
+      console.error('❌ PDF download failed:', error)
+      alert('PDF download failed. Please try again.')
+    }
   }
 
   const getScoreColor = (score: number) => {

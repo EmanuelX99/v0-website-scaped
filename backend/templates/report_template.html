@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Website Analysis Report - {{ company_name }}</title>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <h1>🚀 Website Analysis</h1>
+        </div>
+        <div class="report-info">
+            <h2>Professional Website Report</h2>
+            <p class="date">Erstellt am {{ generated_date }}</p>
+        </div>
+    </div>
+
+    <!-- Company Info Section -->
+    <div class="company-section">
+        <h2 class="company-name">{{ company_name }}</h2>
+        <div class="company-details">
+            <p class="website-url">🌐 {{ website }}</p>
+            {% if address != 'N/A' %}
+            <p class="address">📍 {{ address }}</p>
+            {% endif %}
+            {% if phone != 'N/A' %}
+            <p class="phone">📞 {{ phone }}</p>
+            {% endif %}
+            {% if email != 'N/A' %}
+            <p class="email">✉️ {{ email }}</p>
+            {% endif %}
+            {% if rating %}
+            <p class="rating">⭐ {{ rating }}/5 ({{ review_count }} Bewertungen)</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Overall Score Section -->
+    <div class="overall-score-section">
+        <h3>Gesamtbewertung</h3>
+        <div class="score-circle" style="border-color: {{ get_score_color(total_score) }}">
+            <span class="score-number">{{ total_score }}</span>
+            <span class="score-max">/100</span>
+        </div>
+        <p class="score-label" style="color: {{ get_score_color(total_score) }}">
+            {{ get_score_label(total_score) }}
+        </p>
+    </div>
+
+    <!-- Page Break -->
+    <div class="page-break"></div>
+
+    <!-- Score Breakdown Section -->
+    <div class="scores-section">
+        <h3>📊 Detaillierte Score-Übersicht</h3>
+        <div class="scores-grid">
+            {% for name, score in valid_scores.items() %}
+            <div class="score-item">
+                <div class="score-header">
+                    <span class="score-name">{{ name }}</span>
+                    <span class="score-value" style="color: {{ get_score_color(score) }}">{{ score }}/100</span>
+                </div>
+                <div class="score-bar-container">
+                    <div class="score-bar" style="width: {{ score }}%; background-color: {{ get_score_color(score) }}"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Executive Summary Section -->
+    {% if executive_summary %}
+    <div class="summary-section">
+        <h3>📋 Executive Summary</h3>
+        <p class="summary-text">{{ executive_summary }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Issues Section -->
+    {% if issues|length > 0 %}
+    <div class="issues-section">
+        <h3>🚨 Gefundene Probleme</h3>
+        <ul class="issues-list">
+            {% for issue in issues[:10] %}
+            <li class="issue-item">{{ issue }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Page Break -->
+    <div class="page-break"></div>
+
+    <!-- Recommendations Section -->
+    {% if recommendations|length > 0 %}
+    <div class="recommendations-section">
+        <h3>💡 Empfehlungen zur Verbesserung</h3>
+        <ul class="recommendations-list">
+            {% for rec in recommendations %}
+            <li class="rec-item">{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Call to Action Section -->
+    <div class="cta-section">
+        <h3>🚀 Nächste Schritte</h3>
+        <p>Eine professionelle Website-Optimierung basierend auf dieser Analyse kann:</p>
+        <ul class="benefits-list">
+            <li>Die User Experience um 40-60% verbessern</li>
+            <li>Die Conversion Rate signifikant steigern</li>
+            <li>Die Sichtbarkeit in Suchmaschinen erhöhen</li>
+            <li>Das Vertrauen der Besucher stärken</li>
+            <li>Die mobile Nutzererfahrung optimieren</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-content">
+            <p>Dieser Report wurde automatisch generiert am {{ generated_date }}</p>
+            <p class="footer-website">{{ website }}</p>
+        </div>
+    </div>
+</body>
+</html>

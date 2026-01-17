@@ -23,6 +23,8 @@ load_dotenv()
 
 # Import analyzer
 from analyzer import get_analyzer
+from pdf_generator import PDFReportGenerator
+import io
 
 # ============================================
 # Pydantic Models - API Contract
@@ -537,6 +539,65 @@ async def get_analysis_status(analysis_id: str):
         "createdAt": datetime.utcnow().isoformat() + "Z",
         "completedAt": None
     }
+
+
+@app.get("/api/v1/analyses/{analysis_id}/pdf")
+async def download_pdf_report(analysis_id: str):
+    """
+    Generate and download PDF report for an analysis
+    
+    Args:
+        analysis_id: The analysis ID from database
+        
+    Returns:
+        PDF file as download
+    """
+    try:
+        # Get analyzer instance (to access supabase)
+        analyzer = get_analyzer()
+        
+        if not analyzer.supabase:
+            raise HTTPException(
+                status_code=500,
+                detail="Database not configured"
+            )
+        
+        # Fetch analysis data from database
+        response = analyzer.supabase.table("analyses").select("*").eq("id", analysis_id).execute()
+        
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Analysis with ID {analysis_id} not found"
+            )
+        
+        analysis_data = response.data[0]
+        
+        # Generate PDF
+        pdf_generator = PDFReportGenerator()
+        pdf_bytes = pdf_generator.generate_pdf(analysis_data)
+        
+        # Create filename
+        company_name = analysis_data.get('company_name', 'Company').replace(' ', '_').replace('/', '_')
+        filename = f"Website_Report_{company_name}_{analysis_id[:8]}.pdf"
+        
+        # Return PDF as download
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ PDF generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"PDF generation failed: {str(e)}"
+        )
 
 
 # ============================================

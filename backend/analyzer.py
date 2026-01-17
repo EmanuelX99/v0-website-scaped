@@ -48,7 +48,7 @@ class DeepAnalyzer:
         
         # Gemini AI Configuration
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
-        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-latest")  # Stable production model
         
         # Initialize Gemini if API key is available
         if self.gemini_api_key:

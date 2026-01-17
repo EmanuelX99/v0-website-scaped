@@ -10,12 +10,9 @@ echo "🚀 Starting Render build process..."
 echo "📦 Installing Python packages..."
 pip install -r requirements.txt
 
-# Install Playwright browser (Chromium)
+# Install Playwright browser (Chromium) - WITHOUT system dependencies
 echo "🌐 Installing Playwright Chromium browser..."
-playwright install chromium
-
-# Install system dependencies for Playwright
-echo "🔧 Installing Playwright system dependencies..."
-playwright install-deps
+playwright install chromium --with-deps || playwright install chromium
 
 echo "✅ Build complete! Ready to start server."
+echo "⚠️  Note: If Playwright fails at runtime, it will fallback to requests library."

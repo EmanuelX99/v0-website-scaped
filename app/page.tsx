@@ -232,7 +232,8 @@ export default function Dashboard() {
       setScanProgress({ current: 0, total: targetResults })
 
       // Use EventSource for streaming results
-      const url = new URL("http://127.0.0.1:8000/api/v1/analyses/bulk-search-stream")
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
+      const url = new URL(`${apiUrl}/api/v1/analyses/bulk-search-stream`)
       
       // Create a promise to handle the streaming
       return new Promise<boolean>((resolve, reject) => {

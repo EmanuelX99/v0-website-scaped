@@ -36,7 +36,8 @@ export function ReportModal({ analysis, lead, isOpen, onClose }: ReportModalProp
       }
 
       // Fetch PDF from backend with auth token
-      const response = await fetch(`http://localhost:8000/api/v1/analyses/${analysisId}/pdf`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+      const response = await fetch(`${apiUrl}/api/v1/analyses/${analysisId}/pdf`, {
         headers: {
           "Authorization": `Bearer ${session.access_token}`
         }

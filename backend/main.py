@@ -193,13 +193,15 @@ app = FastAPI(
 )
 
 # CORS Middleware Configuration
+# For production: Allow all origins (Vercel deployment)
+# You can restrict this to your specific Vercel domain later
 cors_origins = os.getenv(
-    "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"
+    "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,https://*.vercel.app"
 ).split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=["*"],  # Allow all origins for deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

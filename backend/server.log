@@ -18,7 +18,7 @@
   warnings.warn(eol_message.format("3.9"), FutureWarning)
 INFO:     Will watch for changes in these directories: ['/Users/emanuel/v0-website-scaped-1/backend']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [26464] using WatchFiles
+INFO:     Started reloader process [74659] using WatchFiles
 Starting LeadScraper AI API server on 0.0.0.0:8000
 CORS origins: ['http://localhost:3000', 'http://localhost:3001']
 /Users/emanuel/v0-website-scaped-1/backend/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
@@ -39,12 +39,21 @@ CORS origins: ['http://localhost:3000', 'http://localhost:3001']
     and then update google-auth.
     
   warnings.warn(eol_message.format("3.9"), FutureWarning)
-INFO:     Started server process [26491]
+INFO:     Started server process [74680]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     127.0.0.1:56143 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56163 - "GET /api/v1/analyses HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56199 - "HEAD /api/v1/analyses/c9e776c3-b716-4823-837b-f227a7c1dfdb/pdf HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:53236 - "GET / HTTP/1.1" 200 OK
+INFO:auth:✅ Authenticated user via Supabase: leon.petricevic1@gmail.com (88b9ebf4-31ca-4e60-b43f-dd4a4f521484)
+============================================================
+STREAMING BULK SEARCH REQUEST
+============================================================
+User ID: 88b9ebf4-31ca-4e60-b43f-dd4a4f521484
+Analysis ID: f5b9d2b0-09cb-44a2-8ea8-bdeee0e1dd45
+Industry: restaurant
+Location: Chiang Mai
+Target Results: 5
+============================================================
+INFO:     127.0.0.1:53366 - "POST /api/v1/analyses/bulk-search-stream HTTP/1.1" 200 OK
 INFO:analyzer:✅ Gemini AI configured with model: gemini-2.5-flash
 INFO:analyzer:✅ Google PageSpeed API configured
 INFO:analyzer:Initializing Supabase client with URL: https://kljyofskcpwcmrlgiwxz.supabase.co
@@ -52,12 +61,1218 @@ INFO:analyzer:Supabase key length: 219
 INFO:httpx:HTTP Request: GET https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?select=id&limit=1 "HTTP/2 200 OK"
 INFO:analyzer:✅ Supabase client created and tested successfully
 INFO:analyzer:DeepAnalyzer initialized successfully
-INFO:httpx:HTTP Request: GET https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?select=%2A&id=eq.c9e776c3-b716-4823-837b-f227a7c1dfdb "HTTP/2 200 OK"
-INFO:pdf_generator:Generating PDF for: Widder Restaurant
-INFO:pdf_generator:✅ PDF generated successfully, size: 4746 bytes
-INFO:     127.0.0.1:56220 - "GET /api/v1/analyses/c9e776c3-b716-4823-837b-f227a7c1dfdb/pdf HTTP/1.1" 200 OK
-INFO:httpx:HTTP Request: GET https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?select=%2A&id=eq.c9e776c3-b716-4823-837b-f227a7c1dfdb "HTTP/2 200 OK"
-INFO:pdf_generator:Generating PDF for: Widder Restaurant
-INFO:pdf_generator:✅ PDF generated successfully, size: 4746 bytes
-INFO:     127.0.0.1:56258 - "GET /api/v1/analyses/c9e776c3-b716-4823-837b-f227a7c1dfdb/pdf HTTP/1.1" 200 OK
+INFO:analyzer:Starting bulk search: restaurant in Chiang Mai, target: 5
+INFO:analyzer:Fetching page 1 (found: 0/5)
+INFO:analyzer:Scanned 20 businesses (total scanned: 20)
+INFO:analyzer:Starting AI analysis for: Blanc Chiang Mai
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 200 OK"
+INFO:analyzer:Starting AI analysis for: B Samcook Home16
+INFO:analyzer:✅ Lead saved: Chada Vegetarian Restaurant Chiang Mai (1/5)
+INFO:analyzer:Starting AI analysis for: Mr. KAI Restaurant
+INFO:analyzer:✅ Lead saved: Garden to Table Chiangmai (2/5)
+WARNING:analyzer:PageSpeed API returned 500 for https://www.facebook.com/p/MrKAI-Restaurant-100054562743868
+INFO:analyzer:✅ Security audit complete: Score=95/100, Issues=1
+INFO:analyzer:✅ Mobile-friendly check: Score=87/100 (viewport=found)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 1 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: e94b5268-9997-414b-83f3-9efac74f3b4a
+INFO:analyzer:✅ Lead saved: Mr. KAI Restaurant (3/5)
+INFO:analyzer:✅ PageSpeed score (desktop): 90/100, Loading: 2.6 s
+INFO:analyzer:✅ Security audit complete: Score=90/100, Issues=2
+INFO:analyzer:✅ PageSpeed score (desktop): 89/100, Loading: 3.6 s
+INFO:analyzer:✅ Security audit complete: Score=95/100, Issues=1
+INFO:analyzer:✅ Mobile-friendly check: Score=87/100 (viewport=found)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 2 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: 8079903f-9dca-4c0e-8619-481df2122781
+INFO:analyzer:✅ Lead saved: B Samcook Home16 (4/5)
+
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+🚀 BULK SEARCH STARTED
+   Industry: restaurant
+   Location: Chiang Mai
+   Target: 5 leads
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+
+🔍 Search Query: restaurant Chiang Mai
+
+
+📄 Page 1 | Progress: 0/5 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant Chiang Mai
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 20)
+
+🔍 Applying Sniper Filters...
+   ✅ 1. Garden to Table Chiangmai - PASSED filters
+   ✅ 2. Chada Vegetarian Restaurant Chiang Mai - PASSED filters
+   ✅ 3. Blanc Chiang Mai - PASSED filters
+   ✅ 4. B Samcook Home16 - PASSED filters
+   ✅ 5. Mr. KAI Restaurant - PASSED filters
+
+🚀 Processing 5 leads in parallel (max 3 concurrent)...
+   ⏭️  Garden to Table Chiangmai: No website - saving basic data only
+   ⏭️  Chada Vegetarian Restaurant Chiang Mai: No website - saving basic data only
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Blanc Chiang Mai
+   Website: https://facebook.com/Blanc.CNX
+============================================================
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://facebook.com/Blanc.CNX...
+
+============================================================
+🔍 Starting AI Analysis
+   Business: B Samcook Home16
+   Website: https://m.facebook.com/thebfamilycnx
+============================================================
+   💾 Lead complete! Chada Vegetarian Restaurant Chiang Mai (1/5)
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://m.facebook.com/thebfamilycnx...
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Mr. KAI Restaurant
+   Website: https://www.facebook.com/p/MrKAI-Restaurant-100054562743868
+============================================================
+🟢 Queueing lead event: 1/5
+   💾 Lead complete! Garden to Table Chiangmai (2/5)
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.facebook.com/p/MrKAI-Restaurant-100054...
+🟢 Queueing lead event: 2/5
+📤 Streaming event: lead
+📤 Streaming event: lead
+⚠️  PageSpeed returned status 500
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.facebook.com/p/MrKAI-Restaurant-100054...
+✅ Security audit done: Score=95/100, Issues=1, Mobile=87/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Mr. KAI Restaurant...
+📝 Gemini FULL raw response (1707 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": ["Facebook"],
+  "scores": {
+    "ui": 80,
+    "ux": 85,
+    "seo": 60,
+    "content": 75,
+    "total": 75
+  },
+  "report_card": {
+    "executive_summary": "Mr. KAI Restaurant hat eine starke Online-Präsenz auf Facebook, aber eine eigene Website könnte Wachstumschancen und Sicherheit verbessern.",
+    "issues_found": [
+      "Missing Referrer-Policy - May leak sensitive information in URLs",
+      "Fehlen einer dedizierten Website für volle Kontrolle über Branding und Funktionen.",
+      "Abhängigkeit von einer Drittplattform (Facebook) limitiert SEO-Potenzial und direkte Kundeninteraktion.",
+      "Keine direkte Kontrolle über PageSpeed und technische SEO-Aspekte ohne eigene Website."
+    ],
+    "recommendations": [
+      "Entwicklung einer professionellen, eigenen Website zur Stärkung der Markenidentität und Funktionalität.",
+      "Implementierung einer Referrer-Policy auf der neuen Website zur Verbesserung der Datensicherheit.",
+      "Integration eines direkten Online-Bestell- und Reservierungssystems auf der eigenen Website.",
+      "Gezielte SEO-Optimierung der neuen Website, um die Sichtbarkeit über Facebook hinaus zu erhöhen."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Mr. KAI Restaurant: Steigern Sie Ihr Online-Potenzial mit einer eigenen Website",
+    "body_text": "Sehr geehrtes Mr. KAI Restaurant Team, Ihre 4.7-Sterne-Bewertung auf Facebook ist beeindruckend! Um dieses Potenzial voll auszuschöpfen und die Kontrolle über Ihre Online-Präsenz zu gewinnen, empfehlen wir eine eigene Website. Dies würde Ihnen mehr Branding, direkte Buchungen/Bestellungen und verbesserte Sicherheit bieten. Lassen Sie uns darüber sprechen!"
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: e94b5268-9997-414b-83f3-9efac74f3b4a
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! Mr. KAI Restaurant (3/5)
+🟢 Queueing lead event: 3/5
+📤 Streaming event: lead
+✅ PageSpeed done: Score=90/100, Time=2.6 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://m.facebook.com/thebfamilycnx...
+✅ Security audit done: Score=90/100, Issues=2, Mobile=0/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: B Samcook Home16...
+✅ PageSpeed done: Score=89/100, Time=3.6 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://facebook.com/Blanc.CNX...
+✅ Security audit done: Score=95/100, Issues=1, Mobile=87/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Blanc Chiang Mai...
+📝 Gemini FULL raw response (1391 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": ["Facebook", "Restaurant POS (inferred)"],
+  "scores": {
+    "ui": 80,
+    "ux": 85,
+    "seo": 70,
+    "content": 90,
+    "total": 81
+  },
+  "report_card": {
+    "executive_summary": "Exzellentes Restaurant mit starker Online-Präsenz und hohem Kundenengagement. Kleinere technische Optimierungen empfohlen.",
+    "issues_found": [
+      "Missing Referrer-Policy - May leak sensitive information in URLs",
+      "Missing Permissions-Policy - No control over browser features",
+      "Abhängigkeit von Facebook-Plattform für Online-Präsenz"
+    ],
+    "recommendations": [
+      "Implementierung von Referrer-Policy und Permissions-Policy zur Verbesserung der Sicherheit.",
+      "Erwägung einer eigenen Website für mehr Kontrolle über Branding und SEO.",
+      "Weiterhin aktives Engagement mit Kunden und Pflege der exzellenten Bewertungen."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Optimierung Ihrer Online-Präsenz & Sicherheit für B Samcook Home16",
+    "body_text": "Sehr geehrtes Team von B Samcook Home16, Ihre 4.9 Sterne und 1757 Bewertungen sind beeindruckend! Wir haben kleine technische Punkte auf Ihrer Facebook-Seite entdeckt (z.B. fehlende Security Policies), die wir gerne optimieren würden, um Ihre digitale Präsenz noch sicherer und effektiver zu gestalten. Lassen Sie uns darüber sprechen, wie wir Ihnen helfen können."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 8079903f-9dca-4c0e-8619-481df2122781
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! B Samcook Home16 (4/5)
+🟢 Queueing lead event: 4/5
+📤 Streaming event: lead
+📝 Gemini FULL raw response (1616 chars):
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 1 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: 847fce39-f5bd-4a5c-9508-8504672c58d9
+INFO:analyzer:✅ Lead saved: Blanc Chiang Mai (5/5)
+INFO:analyzer:No more pages available
+INFO:analyzer:Bulk search completed: 5/5 leads found
+INFO:auth:✅ Authenticated user via Supabase: leon.petricevic1@gmail.com (88b9ebf4-31ca-4e60-b43f-dd4a4f521484)
+{
+  "lead_quality": "High",
+  "tech_stack": ["Facebook Platform"],
+  "scores": {
+    "ui": 80,
+    "ux": 85,
+    "seo": 55,
+    "content": 90,
+    "total": 78
+  },
+  "report_card": {
+    "executive_summary": "Blanc Chiang Mai hat eine starke Online-Präsenz mit hohem Rating, aber Potenzial zur Optimierung der eigenen Webpräsenz.",
+    "issues_found": [
+      "Missing Referrer-Policy - May leak sensitive information in URLs",
+      "Abhängigkeit von einer einzigen Plattform (Facebook) für die primäre Webpräsenz",
+      "Begrenzte Kontrolle über Branding und SEO im Vergleich zu einer dedizierten Website",
+      "Kein direktes Online-Buchungs- oder Bestellsystem auf der aktuellen Plattform"
+    ],
+    "recommendations": [
+      "Entwicklung einer dedizierten, professionellen Website zur Stärkung des Brandings und der Kontrolle",
+      "Implementierung einer korrekten Referrer-Policy für verbesserte Sicherheit",
+      "Integration von Online-Reservierungs- und/oder Bestellfunktionen auf der neuen Website",
+      "Optimierung der Website für lokales SEO mit strukturierten Daten",
+      "Nutzung der starken Facebook-Präsenz, um Traffic auf die neue Website zu leiten"
+    ]
+  },
+  "email_pitch": {
+    "subject": "Verbessern Sie Ihre Online-Präsenz: Blanc Chiang Mai",
+    "body_text": "Ihr Blanc Chiang Mai begeistert Kunden online (4.8 Sterne!). Doch eine eigene Website könnte Ihr Branding stärken, die Sicherheit verbessern (Referrer-Policy fehlt) und Ihnen volle Kontrolle über SEO & Buchungen geben. Lassen Sie uns besprechen, wie wir Ihre digitale Präsenz auf das nächste Level heben können."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 847fce39-f5bd-4a5c-9508-8504672c58d9
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! Blanc Chiang Mai (5/5)
+🟢 Queueing lead event: 5/5
+
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+🏁 BULK SEARCH COMPLETE
+   Status: COMPLETED
+   Found: 5/5 leads
+   Scanned: 20 businesses
+   Pages: 1
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+
+📤 Streaming event: lead
+📤 Streaming event: complete
+============================================================
+STREAMING BULK SEARCH REQUEST
+============================================================
+User ID: 88b9ebf4-31ca-4e60-b43f-dd4a4f521484
+Analysis ID: 4668500e-fcfc-4c3b-84ac-7bb02083da66
+Industry: restaurant
+Location: chiang mai
+Target Results: 5
+============================================================
+INFO:     127.0.0.1:53533 - "POST /api/v1/analyses/bulk-search-stream HTTP/1.1" 200 OK
+INFO:analyzer:Starting bulk search: restaurant in chiang mai, target: 5
+INFO:analyzer:Fetching page 1 (found: 0/5)
+INFO:analyzer:Scanned 20 businesses (total scanned: 20)
+INFO:analyzer:Starting AI analysis for: B Samcook Home16
+INFO:analyzer:Starting AI analysis for: Mr. KAI Restaurant
+INFO:analyzer:Starting AI analysis for: Blanc Chiang Mai
+WARNING:analyzer:PageSpeed API returned 500 for https://m.facebook.com/thebfamilycnx
+WARNING:analyzer:PageSpeed API returned 500 for https://facebook.com/Blanc.CNX
+INFO:analyzer:✅ Security audit complete: Score=90/100, Issues=2
+INFO:analyzer:✅ Security audit complete: Score=95/100, Issues=1
+INFO:analyzer:✅ Mobile-friendly check: Score=87/100 (viewport=found)
+WARNING:analyzer:PageSpeed API returned 429 for https://www.facebook.com/p/MrKAI-Restaurant-100054562743868
+INFO:analyzer:✅ Security audit complete: Score=95/100, Issues=1
+INFO:analyzer:✅ Mobile-friendly check: Score=87/100 (viewport=found)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 2 security issues into analysis report
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 1 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 200 OK"
+INFO:analyzer:✅ Analysis saved to database: e8910b29-8c94-4f44-8c38-8d0a9c6ed9c0
+INFO:analyzer:Starting AI analysis for: Bodhi Terrace
+INFO:analyzer:✅ Lead saved: B Samcook Home16 (1/5)
+INFO:analyzer:✅ Analysis saved to database: 2e221f8d-5684-48b7-b014-596d2e6afda0
+INFO:analyzer:Starting AI analysis for: Tha Phae Grill
+INFO:analyzer:✅ Lead saved: Blanc Chiang Mai (2/5)
+
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+🚀 BULK SEARCH STARTED
+   Industry: restaurant
+   Location: chiang mai
+   Target: 5 leads
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+
+🔍 Search Query: restaurant chiang mai
+
+
+📄 Page 1 | Progress: 0/5 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant chiang mai
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 20)
+
+🔍 Applying Sniper Filters...
+   ✅ 4. B Samcook Home16 - PASSED filters
+   ✅ 5. Mr. KAI Restaurant - PASSED filters
+   ✅ 6. Blanc Chiang Mai - PASSED filters
+   ✅ 7. Bodhi Terrace - PASSED filters
+   ✅ 9. Tha Phae Grill - PASSED filters
+
+🚀 Processing 5 leads in parallel (max 3 concurrent)...
+
+============================================================
+🔍 Starting AI Analysis
+   Business: B Samcook Home16
+   Website: https://m.facebook.com/thebfamilycnx
+============================================================
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Mr. KAI Restaurant
+   Website: https://www.facebook.com/p/MrKAI-Restaurant-100054562743868
+============================================================
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://m.facebook.com/thebfamilycnx...
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Blanc Chiang Mai
+   Website: https://facebook.com/Blanc.CNX
+============================================================
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.facebook.com/p/MrKAI-Restaurant-100054...
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://facebook.com/Blanc.CNX...
+⚠️  PageSpeed returned status 500
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://m.facebook.com/thebfamilycnx...
+⚠️  PageSpeed returned status 500
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://facebook.com/Blanc.CNX...
+✅ Security audit done: Score=90/100, Issues=2, Mobile=0/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: B Samcook Home16...
+✅ Security audit done: Score=95/100, Issues=1, Mobile=87/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Blanc Chiang Mai...
+⚠️  PageSpeed returned status 429
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.facebook.com/p/MrKAI-Restaurant-100054...
+✅ Security audit done: Score=95/100, Issues=1, Mobile=87/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Mr. KAI Restaurant...
+📝 Gemini FULL raw response (1705 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": ["Facebook Platform"],
+  "scores": {
+    "ui": 75,
+    "ux": 80,
+    "seo": 60,
+    "content": 85,
+    "total": 75
+  },
+  "report_card": {
+    "executive_summary": "B Samcook Home16 hat exzellente Bewertungen, aber die Online-Präsenz auf Facebook bietet Optimierungspotenzial für Wachstum und Kontrolle.",
+    "issues_found": [
+      "Abhängigkeit von einer Drittplattform (Facebook) limitiert Kontrolle über Branding, Daten und Funktionalitäten.",
+      "Fehlende Referrer-Policy auf der Plattform kann sensible Informationen in URLs preisgeben.",
+      "Fehlende Permissions-Policy auf der Plattform bietet keine Kontrolle über Browser-Funktionen.",
+      "Kein eigener PageSpeed Score verfügbar, da keine dedizierte Website existiert."
+    ],
+    "recommendations": [
+      "Entwicklung einer eigenen, dedizierten Website für volle Kontrolle über Design, Inhalte und Funktionalitäten.",
+      "Implementierung eines professionellen Online-Menüs und Reservierungssystems auf der eigenen Website.",
+      "Verbesserung der Suchmaschinenoptimierung (SEO) durch eine eigene Website, um neue Kunden zu erreichen.",
+      "Aufbau einer unabhängigen Datenbasis für Marketing und Kundenbindung."
+    ]
+  },
+  "email_pitch": {
+    "subject": "B Samcook Home16: Online-Präsenz optimieren & Wachstum steigern",
+    "body_text": "Herzlichen Glückwunsch zu Ihren hervorragenden Bewertungen! B Samcook Home16 hat eine starke Reputation. Um Ihr Wachstum weiter zu beschleunigen und die Online-Kontrolle zu maximieren, empfehlen wir den Aufbau einer eigenen Website. Gerne besprechen wir in einem kostenlosen Gespräch, wie Sie Ihre digitale Präsenz optimieren können."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+📝 Gemini FULL raw response (1840 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": [
+    "Facebook Page",
+    "Social Media Platform"
+  ],
+  "scores": {
+    "ui": 75,
+    "ux": 70,
+    "seo": 60,
+    "content": 80,
+    "total": 71
+  },
+  "report_card": {
+    "executive_summary": "Blanc Chiang Mai hat eine starke Online-Präsenz auf Facebook, aber eine dedizierte Website könnte Wachstumschancen maximieren.",
+    "issues_found": [
+      "Missing Referrer-Policy - May leak sensitive information in URLs (relevant für zukünftige eigene Website)",
+      "Abhängigkeit von einer einzigen Plattform (Facebook) birgt Risiken und schränkt Anpassungsmöglichkeiten ein.",
+      "Fehlende eigene Website limitiert SEO-Potenzial und direkte Buchungs-/Bestellfunktionen.",
+      "Kein direkter Zugriff auf detaillierte Web-Analytics wie bei einer eigenen Website."
+    ],
+    "recommendations": [
+      "Entwicklung einer professionellen, responsiven Website mit direkter Buchungs-/Bestellfunktion.",
+      "Implementierung einer Referrer-Policy auf der neuen Website zur Verbesserung der Sicherheit.",
+      "Integration eines Blogs oder einer Galerie auf der neuen Website zur Präsentation von Gerichten und Ambiente.",
+      "Verbesserung der SEO-Strategie durch Keyword-Optimierung auf der neuen Website für lokale Suchanfragen.",
+      "Nutzung von E-Mail-Marketing zur direkten Kundenbindung und Angebotskommunikation."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Blanc Chiang Mai: Maximieren Sie Ihr Online-Potenzial & Wachstum",
+    "body_text": "Sehr geehrtes Team von Blanc Chiang Mai, Ihre 4.8-Sterne-Bewertung auf Facebook ist beeindruckend! Wir sehen jedoch ungenutztes Potenzial. Eine eigene Website würde Ihre Sichtbarkeit, Buchungen & Kundenbindung erheblich steigern. Lassen Sie uns besprechen, wie wir Ihnen helfen können, Ihr Online-Geschäft zu revolutionieren."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: e8910b29-8c94-4f44-8c38-8d0a9c6ed9c0
+
+✅ AI Analysis Complete!
+============================================================
+
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Bodhi Terrace
+   Website: https://www.anantara.com/en/chiang-mai/restaurants/bodhi-terrace
+============================================================
+   💾 Lead complete! B Samcook Home16 (1/5)
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.anantara.com/en/chiang-mai/restaurants...
+✅ Saved to database: 2e221f8d-5684-48b7-b014-596d2e6afda0
+🟢 Queueing lead event: 1/5
+
+✅ AI Analysis Complete!
+============================================================
+
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Tha Phae Grill
+   Website: https://www.thapaegrill.com/home
+============================================================
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.thapaegrill.com/home...
+   💾 Lead complete! Blanc Chiang Mai (2/5)
+🟢 Queueing lead event: 2/5
+📤 Streaming event: leadINFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 1 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 200 OK"
+INFO:analyzer:✅ Analysis saved to database: d9dd5681-eb9a-4c61-a332-6ad2c1914ac0
+INFO:analyzer:✅ Lead saved: Mr. KAI Restaurant (3/5)
+INFO:analyzer:✅ PageSpeed score (desktop): 81/100, Loading: 2.1 s
+INFO:analyzer:✅ Security audit complete: Score=20/100, Issues=7
+INFO:analyzer:✅ Mobile-friendly check: Score=90/100 (viewport=found)
+INFO:analyzer:✅ PageSpeed score (desktop): 65/100, Loading: 2.5 s
+INFO:analyzer:✅ Security audit complete: Score=55/100, Issues=4
+INFO:analyzer:✅ Mobile-friendly check: Score=84/100 (viewport=found)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = Medium
+INFO:analyzer:Merged 7 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: c688a384-a7bc-4710-af01-a483ee970ad3
+INFO:analyzer:✅ Lead saved: Tha Phae Grill (4/5)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = Medium
+INFO:analyzer:Merged 4 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 200 OK"
+INFO:analyzer:✅ Analysis saved to database: 638b60c7-cee2-47d0-9562-c7f046a3ae30
+INFO:analyzer:✅ Lead saved: Bodhi Terrace (5/5)
+INFO:analyzer:No more pages available
+INFO:analyzer:Bulk search completed: 5/5 leads found
+INFO:auth:✅ Authenticated user via Supabase: leon.petricevic1@gmail.com (88b9ebf4-31ca-4e60-b43f-dd4a4f521484)
+
+📤 Streaming event: lead
+📝 Gemini FULL raw response (1790 chars):
+```json
+{
+  "lead_quality": "High",
+  "tech_stack": ["Facebook Platform"],
+  "scores": {
+    "ui": 75,
+    "ux": 80,
+    "seo": 60,
+    "content": 85,
+    "total": 75
+  },
+  "report_card": {
+    "executive_summary": "Mr. KAI Restaurant hat eine starke Online-Präsenz auf Facebook mit exzellenten Bewertungen, aber Potenzial für eine eigene Website und verbesserte Sicherheit.",
+    "issues_found": [
+      "Missing Referrer-Policy - May leak sensitive information in URLs",
+      "Kein PageSpeed Score verfügbar, da keine dedizierte Website existiert.",
+      "Starke Abhängigkeit von einer Drittplattform (Facebook) limitiert Kontrolle und erweiterte Funktionen.",
+      "Fehlende eigene Website für vollständige Markenhoheit und erweiterte SEO-Möglichkeiten."
+    ],
+    "recommendations": [
+      "Entwicklung einer professionellen, dedizierten Website für volle Kontrolle, Branding und erweiterte Funktionen.",
+      "Implementierung einer Referrer-Policy auf der neuen Website zur Verbesserung der Sicherheit und des Datenschutzes.",
+      "Integration von Online-Bestell- und Reservierungssystemen direkt auf der eigenen Website.",
+      "Optimierung der neuen Website für schnelle Ladezeiten (PageSpeed) und mobile Responsivität.",
+      "Ausbau der SEO-Strategie auf der neuen Website, um breitere Suchanfragen abzudecken."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Verbessern Sie Ihre Online-Präsenz & Sicherheit für Mr. KAI Restaurant",
+    "body_text": "Liebes Mr. KAI Restaurant Team, Ihre Facebook-Präsenz ist beeindruckend. Um Ihr Wachstum zu maximieren und die Sicherheit zu erhöhen, empfehlen wir eine eigene, optimierte Website. Diese würde Ihnen volle Kontrolle, bessere SEO und erweiterte Funktionen wie Online-Bestellungen bieten. Lassen Sie uns sprechen!"
+  }
+}
+```
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: d9dd5681-eb9a-4c61-a332-6ad2c1914ac0
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! Mr. KAI Restaurant (3/5)
+🟢 Queueing lead event: 3/5
+📤 Streaming event: lead
+✅ PageSpeed done: Score=81/100, Time=2.1 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.thapaegrill.com/home...
+✅ Security audit done: Score=20/100, Issues=7, Mobile=90/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Tha Phae Grill...
+✅ PageSpeed done: Score=65/100, Time=2.5 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.anantara.com/en/chiang-mai/restaurants...
+✅ Security audit done: Score=55/100, Issues=4, Mobile=84/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Bodhi Terrace...
+📝 Gemini FULL raw response (1505 chars):
+```json
+{
+  "lead_quality": "Medium",
+  "tech_stack": [
+    "HTML5",
+    "CSS3",
+    "JavaScript"
+  ],
+  "scores": {
+    "ui": 75,
+    "ux": 80,
+    "seo": 65,
+    "content": 85,
+    "total": 76
+  },
+  "report_card": {
+    "executive_summary": "Tha Phae Grill hat eine starke Online-Präsenz und Reputation, jedoch kritische Sicherheitslücken, die sofortige Aufmerksamkeit erfordern.",
+    "issues_found": [
+      "Missing HSTS Header - Vulnerable to SSL Stripping Attacks",
+      "Missing Clickjacking Protection - No X-Frame-Options or CSP frame-ancestors",
+      "Missing X-Content-Type-Options - Vulnerable to MIME Sniffing Attacks"
+    ],
+    "recommendations": [
+      "Implementieren Sie den HSTS-Header, um SSL Stripping-Angriffe zu verhindern.",
+      "Fügen Sie X-Frame-Options oder CSP frame-ancestors hinzu, um Clickjacking-Schutz zu gewährleisten.",
+      "Implementieren Sie X-Content-Type-Options, um MIME Sniffing-Angriffe zu unterbinden.",
+      "Überprüfen und optimieren Sie die allgemeine SEO-Strategie, um die Sichtbarkeit weiter zu erhöhen."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Wichtige Website-Sicherheit & Performance für Tha Phae Grill",
+    "body_text": "Ihr Tha Phae Grill beeindruckt mit 4.6 Sternen! Wir haben jedoch kritische Sicherheitslücken auf Ihrer Website entdeckt (z.B. fehlende HSTS-Header), die Ihre Kunden gefährden könnten. Gerne zeigen wir Ihnen, wie Sie diese beheben und Ihre Online-Präsenz stärken können, um Ihr Geschäft weiter auszubauen."
+  }
+}
+```
+================================================================================
+✅ Gemini done: Lead Quality = Medium
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: c688a384-a7bc-4710-af01-a483ee970ad3
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! Tha Phae Grill (4/5)
+🟢 Queueing lead event: 4/5
+📤 Streaming event: lead
+📝 Gemini FULL raw response (1472 chars):
+```json
+{
+  "lead_quality": "Medium",
+  "tech_stack": [
+    "Enterprise CMS",
+    "Standard Web Server"
+  ],
+  "scores": {
+    "ui": 80,
+    "ux": 72,
+    "seo": 62,
+    "content": 85,
+    "total": 75
+  },
+  "report_card": {
+    "executive_summary": "Bodhi Terrace glänzt mit Bewertungen, doch die Website hat Optimierungsbedarf bei Performance und Sicherheit, um das Online-Erlebnis zu perfektionieren.",
+    "issues_found": [
+      "Ladezeit von 2.5s und PageSpeed 65/100 beeinträchtigen die Nutzererfahrung.",
+      "Fehlender HSTS Header macht die Website anfällig für SSL Stripping Angriffe.",
+      "Fehlende Content-Security-Policy bietet keinen Schutz vor XSS und Injection Attacks."
+    ],
+    "recommendations": [
+      "Optimierung der Website-Performance zur Reduzierung der Ladezeit und Verbesserung des PageSpeed Scores.",
+      "Implementierung des HSTS Headers zur Erhöhung der Sicherheit gegen SSL Stripping.",
+      "Einführung einer Content-Security-Policy zum Schutz vor Cross-Site Scripting (XSS)."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Bodhi Terrace: Website-Performance & Sicherheit für Ihr Online-Erlebnis",
+    "body_text": "Liebes Bodhi Terrace Team, Ihre exzellenten Bewertungen sind beeindruckend. Wir haben jedoch Potenzial zur Optimierung Ihrer Website entdeckt, insbesondere bei Ladezeit und Sicherheit. Gerne zeigen wir Ihnen, wie Sie diese Punkte beheben und Ihr digitales Schaufenster noch attraktiver gestalten können."
+  }
+}
+```
+================================================================================
+✅ Gemini done: Lead Quality = Medium
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 638b60c7-cee2-47d0-9562-c7f046a3ae30
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! Bodhi Terrace (5/5)
+🟢 Queueing lead event: 5/5
+
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+🏁 BULK SEARCH COMPLETE
+   Status: COMPLETED
+   Found: 5/5 leads
+   Scanned: 20 businesses
+   Pages: 1
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+
+📤 Streaming event: lead
+📤 Streaming event: complete
+============================================================
+STREAMING BULK SEARCH REQUEST
+============================================================
+User ID: 88b9ebf4-31ca-4e60-b43f-dd4a4f521484
+Analysis ID: 1e67b8b9-fcab-4de2-b502-085096ca4a47
+Industry: restaurant
+Location: new york
+Target Results: 1
+============================================================
+INFO:     127.0.0.1:53732 - "POST /api/v1/analyses/bulk-search-stream HTTP/1.1" 200 OK
+INFO:analyzer:Starting bulk search: restaurant in new york, target: 1
+INFO:analyzer:Fetching page 1 (found: 0/1)
+INFO:analyzer:Scanned 20 businesses (total scanned: 20)
+INFO:analyzer:Fetching page 2 (found: 0/1)
+INFO:analyzer:Scanned 20 businesses (total scanned: 40)
+INFO:analyzer:Fetching page 3 (found: 0/1)
+INFO:analyzer:Scanned 20 businesses (total scanned: 60)
+INFO:analyzer:Fetching page 4 (found: 0/1)
+INFO:analyzer:Scanned 20 businesses (total scanned: 80)
+INFO:analyzer:Fetching page 5 (found: 0/1)
+INFO:analyzer:Scanned 20 businesses (total scanned: 100)
+WARNING:analyzer:Stopping early: reached max pages (5)
+INFO:analyzer:Bulk search completed: 0/1 leads found
+INFO:auth:✅ Authenticated user via Supabase: leon.petricevic1@gmail.com (88b9ebf4-31ca-4e60-b43f-dd4a4f521484)
+
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+🚀 BULK SEARCH STARTED
+   Industry: restaurant
+   Location: new york
+   Target: 1 leads
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+
+🔍 Search Query: restaurant new york
+
+
+📄 Page 1 | Progress: 0/1 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant new york
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 20)
+
+🔍 Applying Sniper Filters...
+   ⚠️  No businesses passed filters on this page
+
+📄 Page 2 | Progress: 0/1 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant new york
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 40)
+
+🔍 Applying Sniper Filters...
+   ⚠️  No businesses passed filters on this page
+
+📄 Page 3 | Progress: 0/1 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant new york
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 60)
+
+🔍 Applying Sniper Filters...
+   ⚠️  No businesses passed filters on this page
+
+📄 Page 4 | Progress: 0/1 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant new york
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 80)
+
+🔍 Applying Sniper Filters...
+   ⚠️  No businesses passed filters on this page
+
+📄 Page 5 | Progress: 0/1 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant new york
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 100)
+
+🔍 Applying Sniper Filters...
+   ⚠️  No businesses passed filters on this page
+
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+🏁 BULK SEARCH COMPLETE
+   Status: PARTIAL
+   Found: 0/1 leads
+   Scanned: 100 businesses
+   Pages: 5
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+
+📤 Streaming event: complete
+============================================================
+STREAMING BULK SEARCH REQUEST
+============================================================
+User ID: 88b9ebf4-31ca-4e60-b43f-dd4a4f521484
+Analysis ID: 99abca58-338a-47c9-a7fb-3459ece9821b
+Industry: restaurant
+Location: new york
+Target Results: 5
+============================================================
+INFO:     127.0.0.1:53770 - "POST /api/v1/analyses/bulk-search-stream HTTP/1.1" 200 OK
+INFO:analyzer:Starting bulk search: restaurant in new york, target: 5
+INFO:analyzer:Fetching page 1 (found: 0/5)
+INFO:analyzer:Scanned 20 businesses (total scanned: 20)
+INFO:analyzer:Starting AI analysis for: La Grande Boucherie
+INFO:analyzer:Starting AI analysis for: Gramercy Tavern
+INFO:analyzer:Starting AI analysis for: Manhatta
+INFO:analyzer:✅ PageSpeed score (desktop): 40/100, Loading: 4.4 s
+INFO:analyzer:✅ Security audit complete: Score=80/100, Issues=3
+INFO:analyzer:✅ Mobile-friendly check: Score=84/100 (viewport=found)
+INFO:analyzer:✅ PageSpeed score (desktop): 35/100, Loading: 4.2 s
+INFO:analyzer:✅ Security audit complete: Score=80/100, Issues=3
+INFO:analyzer:✅ Mobile-friendly check: Score=84/100 (viewport=found)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 3 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: 7b3998bd-6dba-4c74-a6e6-e572f6f7efe4
+INFO:analyzer:Starting AI analysis for: OLIO E PIÙ
+INFO:analyzer:✅ Lead saved: Manhatta (1/5)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 3 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: 9d8b42d6-051a-4fd0-9ead-808c5d6aa42c
+INFO:analyzer:Starting AI analysis for: Piccola Cucina Osteria Siciliana
+INFO:analyzer:✅ Lead saved: Gramercy Tavern (2/5)
+INFO:analyzer:✅ PageSpeed score (desktop): 35/100, Loading: 5.0 s
+INFO:analyzer:✅ Security audit complete: Score=80/100, Issues=3
+INFO:analyzer:✅ Mobile-friendly check: Score=84/100 (viewport=found)
+
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+🚀 BULK SEARCH STARTED
+   Industry: restaurant
+   Location: new york
+   Target: 5 leads
+🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 
+
+🔍 Search Query: restaurant new york
+
+
+📄 Page 1 | Progress: 0/5 leads found
+⏳ Calling RapidAPI: https://local-business-data.p.rapidapi.com/search
+   Query: restaurant new york
+✅ RapidAPI done: 20 businesses found
+   Scanned: 20 businesses (total: 20)
+
+🔍 Applying Sniper Filters...
+   ✅ 1. La Grande Boucherie - PASSED filters
+   ✅ 2. Gramercy Tavern - PASSED filters
+   ✅ 3. Manhatta - PASSED filters
+   ✅ 4. OLIO E PIÙ - PASSED filters
+   ✅ 5. Piccola Cucina Osteria Siciliana - PASSED filters
+
+🚀 Processing 5 leads in parallel (max 3 concurrent)...
+
+============================================================
+🔍 Starting AI Analysis
+   Business: La Grande Boucherie
+   Website: https://www.boucherieus.com
+============================================================
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Gramercy Tavern
+   Website: https://www.gramercytavern.com
+============================================================
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.boucherieus.com...
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Manhatta
+   Website: https://www.manhattarestaurant.com
+============================================================
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.gramercytavern.com...
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.manhattarestaurant.com...
+✅ PageSpeed done: Score=40/100, Time=4.4 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.manhattarestaurant.com...
+✅ Security audit done: Score=80/100, Issues=3, Mobile=84/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Manhatta...
+✅ PageSpeed done: Score=35/100, Time=4.2 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.gramercytavern.com...
+✅ Security audit done: Score=80/100, Issues=3, Mobile=84/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Gramercy Tavern...
+📝 Gemini FULL raw response (1476 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": [
+    "Reservation System (z.B. OpenTable)",
+    "Custom Website / CMS"
+  ],
+  "scores": {
+    "ui": 75,
+    "ux": 60,
+    "seo": 55,
+    "content": 85,
+    "total": 69
+  },
+  "report_card": {
+    "executive_summary": "Manhatta hat eine exzellente Reputation, aber technische Schwachstellen bei Website-Performance und Sicherheit limitieren das Online-Potenzial.",
+    "issues_found": [
+      "Geringer PageSpeed Score (40/100) führt zu langer Ladezeit (4.4s).",
+      "Fehlende X-Content-Type-Options macht die Website anfällig für MIME Sniffing.",
+      "Fehlende Referrer-Policy kann sensible Informationen in URLs preisgeben."
+    ],
+    "recommendations": [
+      "Optimierung des PageSpeed durch Bildkomprimierung und Caching zur Reduzierung der Ladezeit.",
+      "Implementierung fehlender Sicherheits-Header (z.B. X-Content-Type-Options, Referrer-Policy).",
+      "Regelmässige Überprüfung und Wartung der Website-Performance und Sicherheit."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Manhatta: Website-Performance & Sicherheit optimieren",
+    "body_text": "Sehr geehrtes Manhatta-Team, Ihre exzellente Reputation ist beeindruckend. Wir haben jedoch festgestellt, dass Ihre Website mit einem PageSpeed von 40 und fehlenden Sicherheitseinstellungen Optimierungspotenzial hat. Gerne zeigen wir Ihnen, wie Sie die Performance steigern und die Sicherheit verbessern können, um Ihr Online-Erlebnis zu perfektionieren."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 7b3998bd-6dba-4c74-a6e6-e572f6f7efe4
+
+✅ AI Analysis Complete!
+============================================================
+
+
+============================================================
+🔍 Starting AI Analysis
+   Business: OLIO E PIÙ
+   Website: https://www.olioepiu.com
+============================================================
+   💾 Lead complete! Manhatta (1/5)
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: https://www.olioepiu.com...
+🟢 Queueing lead event: 1/5
+📤 Streaming event: lead
+📝 Gemini FULL raw response (1518 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": [
+    "Custom CMS",
+    "Reservation System",
+    "Google Analytics"
+  ],
+  "scores": {
+    "ui": 85,
+    "ux": 60,
+    "seo": 65,
+    "content": 90,
+    "total": 75
+  },
+  "report_card": {
+    "executive_summary": "Gramercy Tavern hat exzellenten Ruf, aber die Website leidet unter langsamer Ladezeit und Sicherheitslücken, die das Nutzererlebnis und SEO beeinträchtigen.",
+    "issues_found": [
+      "PageSpeed Score von 35/100 und Ladezeit von 4.2s beeinträchtigen Nutzererfahrung und SEO.",
+      "Fehlende X-Content-Type-Options macht die Website anfällig für MIME Sniffing Angriffe.",
+      "Fehlende Referrer-Policy kann sensible Informationen in URLs preisgeben."
+    ],
+    "recommendations": [
+      "Optimierung der Website-Performance zur Verbesserung des PageSpeed Scores und der Ladezeit.",
+      "Implementierung von X-Content-Type-Options und Referrer-Policy zur Erhöhung der Sicherheit.",
+      "Regelmäßige Überprüfung und Aktualisierung der Sicherheitskonfigurationen."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Gramercy Tavern: Website-Optimierung für besseres Gästeerlebnis & Sicherheit",
+    "body_text": "Sehr geehrtes Team von Gramercy Tavern, Ihre exzellente Reputation ist unbestreitbar. Unsere Analyse zeigt jedoch, dass Ihre Website mit einem PageSpeed Score von 35 und Sicherheitslücken zu kämpfen hat. Eine Optimierung könnte das Gästeerlebnis verbessern und Ihre Online-Präsenz stärken. Gerne besprechen wir, wie wir helfen können."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 9d8b42d6-051a-4fd0-9ead-808c5d6aa42c
+
+✅ AI Analysis Complete!
+============================================================
+
+
+============================================================
+🔍 Starting AI Analysis
+   Business: Piccola Cucina Osteria Siciliana
+   Website: http://www.piccolacucinagroup.com
+============================================================
+   💾 Lead complete! Gramercy Tavern (2/5)
+
+📊 Step 1/4: PageSpeed Insights
+⏳ Calling PageSpeed Insights (desktop) for: http://www.piccolacucinagroup.com...
+🟢 Queueing lead event: 2/5
+📤 Streaming event: lead
+✅ PageSpeed done: Score=35/100, Time=5.0 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.boucherieus.com...
+✅ Security audit done: Score=80/100, Issues=3, Mobile=84/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: La Grande Boucherie...
+📝 Gemini FULL raw response (1584 chars):
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 3 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: 48c63608-10be-41c0-866e-0dd3cb9e7cef
+INFO:analyzer:✅ Lead saved: La Grande Boucherie (3/5)
+INFO:analyzer:✅ PageSpeed score (desktop): 28/100, Loading: 3.3 s
+INFO:analyzer:✅ Security audit complete: Score=80/100, Issues=3
+INFO:analyzer:✅ Mobile-friendly check: Score=80/100 (viewport=found)
+INFO:analyzer:✅ PageSpeed score (desktop): 86/100, Loading: 2.9 s
+INFO:analyzer:✅ Security audit complete: Score=70/100, Issues=3
+INFO:analyzer:✅ Mobile-friendly check: Score=84/100 (viewport=found)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 3 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: 828d63fb-7058-475d-8da8-edf49a63c83d
+INFO:analyzer:✅ Lead saved: OLIO E PIÙ (4/5)
+INFO:analyzer:✅ Successfully parsed Gemini JSON response
+INFO:analyzer:✅ Gemini analysis complete: Lead Quality = High
+INFO:analyzer:Merged 3 security issues into analysis report
+INFO:httpx:HTTP Request: POST https://kljyofskcpwcmrlgiwxz.supabase.co/rest/v1/analyses?on_conflict=google_maps_place_id "HTTP/2 201 Created"
+INFO:analyzer:✅ Analysis saved to database: d888d403-f01f-4601-bec8-34c729fcb587
+INFO:analyzer:✅ Lead saved: Piccola Cucina Osteria Siciliana (5/5)
+INFO:analyzer:No more pages available
+INFO:analyzer:Bulk search completed: 5/5 leads found
+INFO:watchfiles.main:1 change detected
+INFO:watchfiles.main:1 change detected
+INFO:watchfiles.main:1 change detected
+INFO:watchfiles.main:1 change detected
+WARNING:  WatchFiles detected changes in 'main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [74680]
+{
+  "lead_quality": "High",
+  "tech_stack": ["WordPress", "Cloudflare"],
+  "scores": {
+    "ui": 88,
+    "ux": 62,
+    "seo": 58,
+    "content": 91,
+    "total": 75
+  },
+  "report_card": {
+    "executive_summary": "Hervorragendes Restaurant mit starker Online-Präsenz, aber technischen Schwächen bei Performance und Sicherheit, die das Nutzererlebnis beeinträchtigen.",
+    "issues_found": [
+      "PageSpeed Score: 35/100, Loading Time: 5.0 s",
+      "Missing X-Content-Type-Options - Vulnerable to MIME Sniffing Attacks",
+      "Missing Referrer-Policy - May leak sensitive information in URLs",
+      "Missing Permissions-Policy - No control over browser features"
+    ],
+    "recommendations": [
+      "Optimierung der Website-Performance zur Verbesserung des PageSpeed Scores und der Ladezeiten.",
+      "Implementierung der X-Content-Type-Options Header zur Erhöhung der Sicherheit.",
+      "Hinzufügen einer Referrer-Policy, um den Datenschutz zu verbessern.",
+      "Einführung einer Permissions-Policy zur besseren Kontrolle über Browser-Funktionen.",
+      "Regelmäßige Überprüfung und Aktualisierung der Website-Sicherheit."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Verbessern Sie die digitale Performance von La Grande Boucherie",
+    "body_text": "Ihr Restaurant glänzt mit exzellentem Ruf. Doch Ihre Website hat Optimierungspotenzial bei Geschwindigkeit und Sicherheit. Eine schnellere, sicherere Seite verbessert das Nutzererlebnis, SEO und schützt Ihre Daten. Lassen Sie uns die technischen Schwachstellen beheben und Ihren Online-Auftritt perfektionieren."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 48c63608-10be-41c0-866e-0dd3cb9e7cef
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! La Grande Boucherie (3/5)
+🟢 Queueing lead event: 3/5
+📤 Streaming event: lead
+✅ PageSpeed done: Score=28/100, Time=3.3 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: https://www.olioepiu.com...
+✅ Security audit done: Score=80/100, Issues=3, Mobile=80/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: OLIO E PIÙ...
+✅ PageSpeed done: Score=86/100, Time=2.9 s
+
+🔒 Step 2/4: Security Header Audit
+⏳ Fetching website for security audit: http://www.piccolacucinagroup.com...
+✅ Security audit done: Score=70/100, Issues=3, Mobile=84/100
+
+🤖 Step 3/4: Gemini AI Analysis
+⏳ Calling Gemini AI for: Piccola Cucina Osteria Siciliana...
+📝 Gemini FULL raw response (1704 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": ["Reservation System", "CMS (Content Management System)", "Analytics"],
+  "scores": {
+    "ui": 70,
+    "ux": 60,
+    "seo": 55,
+    "content": 85,
+    "total": 68
+  },
+  "report_card": {
+    "executive_summary": "OLIO E PIÙ ist ein hoch bewertetes Restaurant mit starker Online-Präsenz, jedoch mit Optimierungsbedarf bei Website-Performance und Sicherheit.",
+    "issues_found": [
+      "PageSpeed Score von 28/100 und Ladezeit von 3.3s beeinträchtigen Nutzererfahrung und SEO.",
+      "Fehlende X-Content-Type-Options macht die Website anfällig für MIME Sniffing Angriffe.",
+      "Fehlende Referrer-Policy kann sensible Informationen in URLs preisgeben.",
+      "Fehlende Permissions-Policy bietet keine Kontrolle über Browser-Funktionen."
+    ],
+    "recommendations": [
+      "Optimierung der Website-Geschwindigkeit zur Verbesserung von UX und SEO.",
+      "Implementierung von X-Content-Type-Options zur Erhöhung der Sicherheit.",
+      "Hinzufügen einer Referrer-Policy zum Schutz sensibler Daten.",
+      "Einführung einer Permissions-Policy zur besseren Kontrolle von Browser-Features.",
+      "Regelmäßige technische Audits zur Sicherstellung optimaler Performance und Sicherheit."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Verbessern Sie die Online-Präsenz von OLIO E PIÙ: Geschwindigkeit & Sicherheit",
+    "body_text": "Sehr geehrtes Team von OLIO E PIÙ, Ihre 4.7 Sterne sprechen Bände! Wir haben Ihre Website analysiert und Potenzial zur Optimierung der Ladezeit (aktuell 3.3s) und Sicherheit entdeckt. Eine schnellere, sicherere Seite verbessert die Kundenerfahrung und Ihr Ranking. Gerne besprechen wir, wie wir Ihnen helfen können."
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: 828d63fb-7058-475d-8da8-edf49a63c83d
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! OLIO E PIÙ (4/5)
+🟢 Queueing lead event: 4/5
+📤 Streaming event: lead
+📝 Gemini FULL raw response (1505 chars):
+{
+  "lead_quality": "High",
+  "tech_stack": ["Custom Web Development"],
+  "scores": {
+    "ui": 75,
+    "ux": 80,
+    "seo": 70,
+    "content": 85,
+    "total": 78
+  },
+  "report_card": {
+    "executive_summary": "Erfolgreiches Restaurant mit starker Online-Präsenz, aber wichtigen Sicherheitslücken, die behoben werden sollten.",
+    "issues_found": [
+      "Missing HSTS Header - Vulnerable to SSL Stripping Attacks",
+      "Missing Referrer-Policy - May leak sensitive information in URLs",
+      "Missing Permissions-Policy - No control over browser features"
+    ],
+    "recommendations": [
+      "Implementierung des HSTS Headers zur Verbesserung der Sicherheit gegen SSL Stripping.",
+      "Hinzufügen einer Referrer-Policy, um das Leaken sensibler Informationen zu verhindern.",
+      "Einführung einer Permissions-Policy zur besseren Kontrolle über Browser-Funktionen.",
+      "Regelmäßige Sicherheitsaudits durchführen, um die Website dauerhaft zu schützen.",
+      "Optimierung der Website für noch schnellere Ladezeiten und verbesserte mobile Darstellung."
+    ]
+  },
+  "email_pitch": {
+    "subject": "Sicherheits-Check für Piccola Cucina Osteria Siciliana Website",
+    "body_text": "Ihre Website hat ein hervorragendes Rating, aber wir haben kritische Sicherheitslücken entdeckt (z.B. fehlender HSTS Header). Diese können Ihre Kunden und Ihr Geschäft gefährden. Gerne zeigen wir Ihnen, wie Sie diese schnell beheben und Ihre Online-Präsenz weiter stärken können. Ein kurzes Gespräch?"
+  }
+}
+================================================================================
+✅ Gemini done: Lead Quality = High
+
+🔗 Step 4/4: Merging Data & Saving
+💾 Saving to Supabase...
+✅ Saved to database: d888d403-f01f-4601-bec8-34c729fcb587
+
+✅ AI Analysis Complete!
+============================================================
+
+   💾 Lead complete! Piccola Cucina Osteria Siciliana (5/5)
+🟢 Queueing lead event: 5/5
+
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+🏁 BULK SEARCH COMPLETE
+   Status: COMPLETED
+   Found: 5/5 leads
+   Scanned: 20 businesses
+   Pages: 1
+🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 🏁 
+
+📤 Streaming event: lead
+📤 Streaming event: complete
+/Users/emanuel/v0-website-scaped-1/backend/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+/Users/emanuel/v0-website-scaped-1/backend/venv/lib/python3.9/site-packages/google/api_core/_python_version_support.py:246: FutureWarning: You are using a non-supported Python version (3.9.6). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+  warnings.warn(message, FutureWarning)
+/Users/emanuel/v0-website-scaped-1/backend/venv/lib/python3.9/site-packages/google/auth/__init__.py:54: FutureWarning: 
+    You are using a Python version 3.9 past its end of life. Google will update
+    google-auth with critical bug fixes on a best-effort basis, but not
+    with any other fixes or features. Please upgrade your Python version,
+    and then update google-auth.
+    
+  warnings.warn(eol_message.format("3.9"), FutureWarning)
+/Users/emanuel/v0-website-scaped-1/backend/venv/lib/python3.9/site-packages/google/oauth2/__init__.py:40: FutureWarning: 
+    You are using a Python version 3.9 past its end of life. Google will update
+    google-auth with critical bug fixes on a best-effort basis, but not
+    with any other fixes or features. Please upgrade your Python version,
+    and then update google-auth.
+    
+  warnings.warn(eol_message.format("3.9"), FutureWarning)
+INFO:     Started server process [81490]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:watchfiles.main:1 change detected
 INFO:watchfiles.main:1 change detected

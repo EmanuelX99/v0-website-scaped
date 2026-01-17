@@ -8,6 +8,7 @@ import uuid
 import logging
 import json
 import re
+import random
 from urllib.parse import urlparse
 from typing import List, Dict, Optional, Any
 from datetime import datetime
@@ -135,7 +136,7 @@ class DeepAnalyzer:
         found_leads = []
         scanned_count = 0
         page_count = 0
-        next_page_token = None
+        current_offset = 0  # Track offset for pagination
         stop_reason = None
         
         # Build search query
@@ -153,19 +154,33 @@ class DeepAnalyzer:
             print(f"\n📄 Page {page_count} | Progress: {len(found_leads)}/{target_results} leads found")
             logger.info(f"Fetching page {page_count} (found: {len(found_leads)}/{target_results})")
             
-            # Fetch page from RapidAPI
+            # Fetch page from RapidAPI with offset
             try:
-                businesses, next_token = self._fetch_google_maps_page(
+                businesses, _, next_offset = self._fetch_google_maps_page(
                     query=query,
-                    next_page_token=next_page_token
+                    offset=current_offset
                 )
+                
+                # 🎯 Apply Hybrid Ranking for diversification
+                # This adds a small random component while preserving relevance
+                if businesses:
+                    businesses = self._apply_hybrid_ranking(businesses)
+                    print(f"   🎯 Hybrid ranking applied (quality + popularity + randomness)")
+                
+                # 🎲 Smart Shuffling: Mix results while keeping top 5 stable
+                # This ensures variety while maintaining the most relevant results
+                if businesses and len(businesses) > 5:
+                    businesses = self._shuffle_results(businesses, keep_top_n=5)
+                    print(f"   🎲 Results shuffled (kept top 5 stable for relevance)")
+                
             except Exception as e:
                 print(f"❌ Failed to fetch page {page_count}: {str(e)}")
                 logger.error(f"Failed to fetch page {page_count}: {str(e)}")
                 break
             
-            # Update next page token
-            next_page_token = next_token
+            # Update offset for next iteration
+            if next_offset is not None:
+                current_offset = next_offset
             
             # Check if we got results
             if not businesses:
@@ -312,17 +327,19 @@ class DeepAnalyzer:
     def _fetch_google_maps_page(
         self,
         query: str,
-        next_page_token: Optional[str] = None
-    ) -> tuple[List[Dict], Optional[str]]:
+        next_page_token: Optional[str] = None,
+        offset: int = 0
+    ) -> tuple[List[Dict], Optional[str], int]:
         """
-        Fetch a page of results from RapidAPI Google Maps
+        Fetch a page of results from RapidAPI Google Maps with smart offset for result diversification
         
         Args:
             query: Search query
-            next_page_token: Pagination token from previous request
+            next_page_token: Pagination token from previous request (not used by this API)
+            offset: Starting position for results (0, 20, 40, etc.)
         
         Returns:
-            Tuple of (businesses list, next_page_token)
+            Tuple of (businesses list, next_page_token, next_offset)
         """
         # Use the configured endpoint URL (from .env)
         # Local Business Data API uses /search (not /maps/search)
@@ -333,19 +350,22 @@ class DeepAnalyzer:
             "x-rapidapi-host": self.rapidapi_host
         }
         
+        # Dynamic limit based on offset to get more variety
+        # First page: 20 results
+        # Later pages: Can request up to 50 for more diversity
+        limit = 20 if offset == 0 else 40
+        
         params = {
             "query": query,
-            "limit": "20",  # Max results per page
+            "limit": str(limit),
             "language": "de",
-            "region": "ch"
+            "region": "ch",
+            "offset": str(offset)  # Key parameter for result diversification!
         }
-        
-        # Local Business Data API uses 'offset' instead of 'next_page_token'
-        # For now, we'll handle pagination differently if needed
-        # (this API doesn't provide a next_page_token)
         
         print(f"⏳ Calling RapidAPI: {url}")
         print(f"   Query: {query}")
+        print(f"   Offset: {offset} | Limit: {limit}")
         
         try:
             response = requests.get(
@@ -363,21 +383,97 @@ class DeepAnalyzer:
             
             print(f"✅ RapidAPI done: {len(businesses)} businesses found")
             
-            # This API doesn't provide next_page_token
-            # We return None to stop pagination after first page
-            next_token = None
+            # Calculate next offset for pagination
+            next_offset = offset + len(businesses) if businesses else None
             
-            return businesses, next_token
+            return businesses, None, next_offset
             
         except requests.exceptions.Timeout:
             print(f"❌ RapidAPI Timeout after 15s")
             logger.error(f"RapidAPI timeout for query: {query}")
-            return [], None
+            return [], None, None
             
         except requests.exceptions.RequestException as e:
             print(f"❌ RapidAPI Error: {str(e)}")
             logger.error(f"RapidAPI request failed: {str(e)}")
             raise
+    
+    def _apply_hybrid_ranking(self, businesses: List[Dict]) -> List[Dict]:
+        """
+        Apply hybrid scoring with randomness for result diversification
+        
+        This adds a small random component to the ranking while preserving
+        overall relevance. High-quality businesses stay near the top, but
+        the exact order varies between searches.
+        
+        Score components:
+        - 35% Rating (quality indicator)
+        - 25% Review count (popularity/trust)
+        - 25% Has website (lead quality)
+        - 15% Random (variation element)
+        
+        Args:
+            businesses: List of business results from API
+        
+        Returns:
+            Re-ranked list with hybrid scores
+        """
+        if not businesses:
+            return businesses
+        
+        for business in businesses:
+            # Safe data extraction with fallbacks
+            rating = float(business.get("rating") or 0)
+            review_count = int(business.get("review_count") or 0)
+            has_website = 1.0 if business.get("website") else 0.0
+            
+            # Normalization (0-1 scale)
+            # Rating: 0-5 → 0-1
+            norm_rating = min(rating / 5.0, 1.0) if rating > 0 else 0
+            
+            # Reviews: Use log scale (0-1000+ reviews → 0-1)
+            # Most businesses have 0-500 reviews, so 1000 is generous
+            norm_reviews = min(review_count / 1000.0, 1.0)
+            
+            # Calculate hybrid score
+            score = (
+                0.35 * norm_rating +           # Quality (35%)
+                0.25 * norm_reviews +          # Popularity (25%)
+                0.25 * has_website +           # Lead quality (25%)
+                0.15 * random.random()         # Variation (15%)
+            )
+            
+            # Store score in business object (non-invasive, uses private key)
+            business["_hybrid_score"] = score
+        
+        # Sort by score (descending = highest score first)
+        businesses.sort(key=lambda x: x.get("_hybrid_score", 0), reverse=True)
+        
+        return businesses
+    
+    def _shuffle_results(self, businesses: List[Dict], keep_top_n: int = 3) -> List[Dict]:
+        """
+        Shuffle results while keeping top N results stable for relevance
+        
+        Args:
+            businesses: List of business results
+            keep_top_n: Number of top results to keep stable (default: 3)
+        
+        Returns:
+            Shuffled list with top N results preserved
+        """
+        if len(businesses) <= keep_top_n:
+            return businesses
+        
+        # Split into stable top and shuffleable tail
+        top = businesses[:keep_top_n]
+        tail = businesses[keep_top_n:]
+        
+        # Shuffle the tail
+        random.shuffle(tail)
+        
+        # Combine back
+        return top + tail
     
     def _passes_filters(self, business: Dict, filters: Dict[str, Any]) -> bool:
         """
